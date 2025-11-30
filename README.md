@@ -1,20 +1,32 @@
-# ReLead Digital – Landing estática
+# ReLead
 
-Sitio estático listo para despliegue en Vercel. Incluye página principal y URLs secundarias para servicios, portafolio, contacto y documentos legales.
+ReLead es un servicio de "link in bio" construido con Next.js 14 (App Router), TypeScript, Tailwind CSS, Prisma, PostgreSQL y NextAuth.
 
-## Estructura
-- `index.html`: landing principal con resumen de servicios y enlaces clave.
-- `servicios.html`, `portafolio.html`, `sobre-mi.html`, `contacto.html`: páginas secundarias con información detallada.
-- `terminos-condiciones.html`, `politica-de-privacidad.html`: documentos legales.
-- `css/base.css`: estilos globales.
-- `vercel.json`: configuración básica para Vercel (clean URLs y redirección a `index.html`).
+## Requisitos
+- Node.js 18+
+- PostgreSQL accesible vía `DATABASE_URL`
 
-## Despliegue en Vercel
-1. Importa el repositorio en Vercel.
-2. Selecciona framework **Other** (sitio estático) y establece la carpeta raíz del proyecto.
-3. No requiere build ni comandos adicionales; el output es la raíz del repo.
-4. Asegúrate de que `Output Directory` sea `.` y habilita **Clean URLs**.
-5. Guarda e inicia el deploy.
+## Variables de entorno
+Copia `.env.example` a `.env` y completa los valores:
+- `DATABASE_URL`
+- `NEXTAUTH_SECRET`
+- `NEXTAUTH_URL`
 
-## Desarrollo local
-No hay dependencias de compilación. Basta con abrir `index.html` en el navegador o servir la carpeta con un servidor estático.
+## Scripts útiles
+- `npm install`
+- `npm run dev`
+- `npx prisma generate`
+- `npx prisma migrate dev --name init`
+- `npm run build`
+
+## Estructura principal
+- `src/app` – rutas de App Router (landing, auth, dashboard, páginas públicas, APIs).
+- `prisma/schema.prisma` – modelos y definiciones de la base de datos.
+- `src/lib` – helpers de Prisma y NextAuth.
+- `src/components` – UI reutilizable (layout, formularios, listas de links).
+
+## Flujos clave
+- Registro en `/auth/register` (crea usuario, hash de contraseña y perfil con slug único).
+- Login con NextAuth Credentials en `/auth/login`.
+- Dashboard protegido en `/dashboard` para métricas y gestión de perfil/links.
+- Página pública en `/{slug}` con tracking de visitas y clics.
