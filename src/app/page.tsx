@@ -26,6 +26,19 @@ export default async function HomePage() {
           </div>
         </div>
       </main>
+      <footer className="border-t bg-white">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-4 py-6 text-sm text-gray-700 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-center sm:text-left">© {new Date().getFullYear()} ReLead Digital</p>
+          <div className="flex items-center justify-center gap-4">
+            <Link href="/legal/privacy" className="hover:text-gray-900">
+              Política de privacidad
+            </Link>
+            <Link href="/legal/terms" className="hover:text-gray-900">
+              Términos y condiciones
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
