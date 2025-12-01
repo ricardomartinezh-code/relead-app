@@ -8,6 +8,11 @@ const allowedOrigins = ["https://www.facebook.com", "https://web.facebook.com"];
 const WHATSAPP_CONFIG_ID_CTWA = process.env.NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_CTWA;
 const WHATSAPP_CONFIG_ID_NO_CTWA =
   process.env.NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_NO_CTWA;
+const WHATSAPP_EXTRAS = {
+  featureType: "whatsapp_business_app_onboarding",
+  sessionInfoVersion: "3",
+  version: "v3",
+};
 
 type EmbeddedSignupMessage = any;
 type FbAuthResponse = { code?: string | null } | null;
@@ -168,7 +173,7 @@ export default function WhatsappEmbeddedSignup() {
         config_id: configId,
         response_type: "code",
         override_default_response_type: true,
-        extras: { version: "v3" },
+        extras: WHATSAPP_EXTRAS,
       }
     );
   };
