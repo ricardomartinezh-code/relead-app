@@ -16,9 +16,13 @@ export default async function ProfilePage() {
         <h1 className="text-2xl font-semibold">Perfil</h1>
         <p className="text-sm text-gray-600">Actualiza la información de tu página pública.</p>
       </div>
-      <div className="rounded-lg bg-white p-6 shadow">
-        <ProfileForm profile={user.profile} />
-      </div>
+      {profile ? (
+        <div className="rounded-lg bg-white p-6 shadow">
+          <ProfileForm profile={profile} />
+        </div>
+      ) : (
+        <p className="p-6">Crea tu perfil primero.</p>
+      )}
     </DashboardLayout>
   );
 }

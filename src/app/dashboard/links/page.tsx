@@ -16,7 +16,7 @@ export default async function LinksPage() {
         <h1 className="text-2xl font-semibold">Links</h1>
         <p className="text-sm text-gray-600">Administra tus enlaces públicos.</p>
       </div>
-      <LinksManager />
+      {profile ? <LinksManager /> : <p className="p-6">Crea tu perfil primero.</p>}
     </DashboardLayout>
   );
 }
