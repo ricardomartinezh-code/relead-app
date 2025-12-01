@@ -18,23 +18,22 @@ export default async function PublicProfilePage({ params }: { params: { slug: st
   await prisma.pageView.create({ data: { profileId: profile.id, referrer, userAgent, ip } });
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 px-4 py-12 text-white">
-      <div className="mx-auto w-full max-w-md text-center">
-        <div className="mb-8 flex flex-col items-center">
-          {profile.avatarUrl && (
-            <Image
-              src={profile.avatarUrl}
-              alt={profile.title}
-              width={96}
-              height={96}
-              className="mb-4 h-24 w-24 rounded-full border-2 border-white/40 object-cover shadow-lg"
-            />
-          )}
-          <h1 className="text-2xl font-semibold">{profile.title}</h1>
-          {profile.bio && <p className="mt-2 text-sm text-white/70">{profile.bio}</p>}
-        </div>
+    <main className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 text-white">
+      <div className="max-w-md mx-auto px-4 py-10 flex flex-col items-center">
+        {profile.avatarUrl && (
+          <Image
+            src={profile.avatarUrl}
+            alt={profile.title}
+            width={96}
+            height={96}
+            className="w-24 h-24 rounded-full border-2 border-white/40 shadow-lg object-cover mb-4"
+          />
+        )}
 
-        <div className="space-y-3">
+        <h1 className="text-2xl font-semibold text-center">{profile.title}</h1>
+        {profile.bio && <p className="mt-2 text-sm text-white/70 text-center">{profile.bio}</p>}
+
+        <div className="mt-8 w-full">
           <LinkButtons links={profile.links} />
         </div>
       </div>
