@@ -137,29 +137,34 @@ export default function WhatsappEmbeddedSignup() {
     setSessionInfo(null);
     setSdkResponse(null);
     setSubmitError(null);
-    setSubmitResult(null);
 
     if (!WHATSAPP_CONFIG_ID) {
       console.error("Falta NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID");
-      setSubmitError("Falta configurar el ID de configuración de WhatsApp (NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID).");
+      setSubmitError(
+        "Falta configurar el ID de configuración de WhatsApp (NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID)."
+      );
       return;
     }
 
-    const { FB } = window as typeof window & { FB?: any };
-
-    if (!FB) {
-      // eslint-disable-next-line no-console
-      console.error("Facebook SDK no está disponible en window.FB");
-      setSubmitError("Facebook SDK no está disponible en window.FB.");
+    if (typeof FB === "undefined") {
+      console.error("El SDK de Facebook aún no está disponible (FB es undefined).");
+      setSubmitError(
+        "El SDK de Facebook todavía no terminó de cargar. Actualiza la página, espera unos segundos y vuelve a intentar."
+      );
       return;
     }
 
-    FB.login(fbLoginCallback, {
-      config_id: WHATSAPP_CONFIG_ID,
-      response_type: "code",
-      override_default_response_type: true,
-      extras: { version: "v3" },
-    });
+    FB.login(
+      (response: FbLoginResponse) => {
+        void fbLoginCallback(response);
+      },
+      {
+        config_id: WHATSAPP_CONFIG_ID,
+        response_type: "code",
+        override_default_response_type: true,
+        extras: { version: "v3" },
+      }
+    );
   };
 
   return (
