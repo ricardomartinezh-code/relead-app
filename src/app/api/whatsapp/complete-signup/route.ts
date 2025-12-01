@@ -26,6 +26,9 @@ export async function POST(request: Request) {
   }
 
   const { META_APP_ID, META_APP_SECRET, META_REDIRECT_URI } = process.env;
+  // META_REDIRECT_URI debe coincidir exactamente con la URL donde se ejecuta FB.login,
+  // en este caso: https://relead.com.mx/dashboard/whatsapp
+  // y la misma URL debe estar registrada como "Valid OAuth Redirect URI" en Meta Developers.
 
   if (!META_APP_ID || !META_APP_SECRET || !META_REDIRECT_URI) {
     return NextResponse.json(
