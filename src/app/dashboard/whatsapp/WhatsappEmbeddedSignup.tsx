@@ -27,8 +27,7 @@ const allowedOrigins = ["https://www.facebook.com", "https://web.facebook.com"];
 export default function WhatsappEmbeddedSignup() {
   const [sessionInfo, setSessionInfo] = useState<EmbeddedSignupMessage | null>(null);
   const [sdkResponse, setSdkResponse] = useState<FbLoginResponse | null>(null);
-  const [phoneNumberId, setPhoneNumberId] = useState<string | undefined>();
-  const [wabaId, setWabaId] = useState<string | undefined>();
+  const [waIds, setWaIds] = useState({ phoneNumberId: "", wabaId: "" });
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -39,8 +38,10 @@ export default function WhatsappEmbeddedSignup() {
 
         if (data.type === "WA_EMBEDDED_SIGNUP") {
           if (data.event === "FINISH") {
-            setPhoneNumberId(data.phone_number_id);
-            setWabaId(data.waba_id);
+            setWaIds({
+              phoneNumberId: data.phone_number_id ?? "",
+              wabaId: data.waba_id ?? "",
+            });
           } else if (data.event === "CANCEL") {
             // eslint-disable-next-line no-console
             console.warn("Embedded signup cancel:", data.current_step);
@@ -62,15 +63,35 @@ export default function WhatsappEmbeddedSignup() {
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
-  const fbLoginCallback = (response: FbLoginResponse) => {
+  const fbLoginCallback = async (response: FbLoginResponse) => {
     setSdkResponse(response);
 
     if (response.authResponse) {
       const code = response.authResponse.code;
-      // Enviar code + phone_number_id + waba_id al backend para finalizar el onboarding.
-      void code;
-      void phoneNumberId;
-      void wabaId;
+
+      if (code && waIds.phoneNumberId && waIds.wabaId) {
+        try {
+          const res = await fetch("/api/whatsapp/complete-signup", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              code,
+              phone_number_id: waIds.phoneNumberId,
+              waba_id: waIds.wabaId,
+            }),
+          });
+
+          const data = await res.json();
+          // eslint-disable-next-line no-console
+          console.log("Respuesta de complete-signup:", data);
+          // TODO: Mostrar feedback en UI o redirigir después de un onboarding exitoso.
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error("Error al completar el signup de WhatsApp:", error);
+        }
+      }
     }
   };
 
