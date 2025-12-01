@@ -3,6 +3,12 @@ import Script from "next/script";
 import WhatsappEmbeddedSignup from "./WhatsappEmbeddedSignup";
 
 export default async function WhatsappPage() {
+  const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID;
+
+  if (!metaAppId) {
+    console.error("Falta configurar NEXT_PUBLIC_META_APP_ID en las variables de entorno");
+  }
+
   return (
     <DashboardLayout>
       <main className="min-h-screen bg-slate-100">
@@ -10,7 +16,7 @@ export default async function WhatsappPage() {
           {`
          window.fbAsyncInit = function() {
            FB.init({
-             appId            : '1112702537665058',
+             appId            : '${metaAppId}',
              autoLogAppEvents : true,
              xfbml            : true,
              version          : 'v24.0'
@@ -30,6 +36,11 @@ export default async function WhatsappPage() {
         <div className="mx-auto max-w-5xl px-4 py-10">
           <div className="mb-6">
             <h1 className="text-3xl font-semibold text-gray-900">Conecta tu WhatsApp Business</h1>
+            {!metaAppId && (
+              <p className="mt-1 text-sm text-red-600">
+                Falta configurar NEXT_PUBLIC_META_APP_ID; no se puede inicializar el SDK de Facebook.
+              </p>
+            )}
             <p className="mt-2 text-gray-700">
               Habilita el registro insertado para vincular tu cuenta de WhatsApp Business y gestionar
               conversaciones directamente desde ReLead.
