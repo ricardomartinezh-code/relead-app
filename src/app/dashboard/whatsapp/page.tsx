@@ -5,7 +5,6 @@ import WhatsappEmbeddedSignup from "./WhatsappEmbeddedSignup";
 
 export default async function WhatsappPage() {
   const session = await getSession();
-  if (!session?.user?.email) return <p className="p-6">No autorizado</p>;
 
   return (
     <DashboardLayout>

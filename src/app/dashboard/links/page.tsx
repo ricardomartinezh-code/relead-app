@@ -5,9 +5,10 @@ import { prisma } from "@/lib/prisma";
 
 export default async function LinksPage() {
   const session = await getSession();
-  if (!session?.user?.email) return <p className="p-6">No autorizado</p>;
-  const user = await prisma.user.findUnique({ where: { email: session.user.email }, include: { profile: true } });
-  if (!user?.profile) return <p className="p-6">Crea tu perfil primero.</p>;
+  const user = session?.user?.email
+    ? await prisma.user.findUnique({ where: { email: session.user.email }, include: { profile: true } })
+    : null;
+  const profile = user?.profile;
 
   return (
     <DashboardLayout>
@@ -15,7 +16,7 @@ export default async function LinksPage() {
         <h1 className="text-2xl font-semibold">Links</h1>
         <p className="text-sm text-gray-600">Administra tus enlaces públicos.</p>
       </div>
-      <LinksManager />
+      {profile ? <LinksManager /> : <p className="p-6">Crea tu perfil primero.</p>}
     </DashboardLayout>
   );
 }

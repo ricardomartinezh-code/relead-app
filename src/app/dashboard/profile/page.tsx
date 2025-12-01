@@ -5,9 +5,10 @@ import { prisma } from "@/lib/prisma";
 
 export default async function ProfilePage() {
   const session = await getSession();
-  if (!session?.user?.email) return <p className="p-6">No autorizado</p>;
-  const user = await prisma.user.findUnique({ where: { email: session.user.email }, include: { profile: true } });
-  if (!user?.profile) return <p className="p-6">Crea tu perfil primero.</p>;
+  const user = session?.user?.email
+    ? await prisma.user.findUnique({ where: { email: session.user.email }, include: { profile: true } })
+    : null;
+  const profile = user?.profile;
 
   return (
     <DashboardLayout>
@@ -15,9 +16,13 @@ export default async function ProfilePage() {
         <h1 className="text-2xl font-semibold">Perfil</h1>
         <p className="text-sm text-gray-600">Actualiza la información de tu página pública.</p>
       </div>
-      <div className="rounded-lg bg-white p-6 shadow">
-        <ProfileForm profile={user.profile} />
-      </div>
+      {profile ? (
+        <div className="rounded-lg bg-white p-6 shadow">
+          <ProfileForm profile={profile} />
+        </div>
+      ) : (
+        <p className="p-6">Crea tu perfil primero.</p>
+      )}
     </DashboardLayout>
   );
 }
