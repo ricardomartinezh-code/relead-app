@@ -1,13 +1,8 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { getSession } from "@/lib/auth";
 import Script from "next/script";
-import { redirect } from "next/navigation";
 import WhatsappEmbeddedSignup from "./WhatsappEmbeddedSignup";
 
 export default async function WhatsappPage() {
-  const session = await getSession();
-  if (!session?.user?.email) redirect("/auth/login");
-
   return (
     <DashboardLayout>
       <main className="min-h-screen bg-slate-100">
