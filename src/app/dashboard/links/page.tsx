@@ -2,11 +2,17 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { LinksManager } from "@/components/LinksManager";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
 
 export default async function LinksPage() {
   const session = await getSession();
-  if (!session?.user?.email) redirect("/auth/login");
+  if (!session?.user?.email) {
+    return (
+      <DashboardLayout>
+        <p className="p-6">Inicia sesión para administrar tus enlaces públicos.</p>
+      </DashboardLayout>
+    );
+  }
+
   const user = await prisma.user.findUnique({ where: { email: session.user.email }, include: { profile: true } });
   if (!user?.profile) return <p className="p-6">Crea tu perfil primero.</p>;
 
