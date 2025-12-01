@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 declare const FB: any;
 
 const allowedOrigins = ["https://www.facebook.com", "https://web.facebook.com"];
-const WHATSAPP_CONFIG_ID = process.env.NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID;
+const WHATSAPP_CONFIG_ID_CTWA = process.env.NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_CTWA;
+const WHATSAPP_CONFIG_ID_NO_CTWA =
+  process.env.NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_NO_CTWA;
 
 type EmbeddedSignupMessage = any;
 type FbAuthResponse = { code?: string | null } | null;
@@ -134,15 +136,18 @@ export default function WhatsappEmbeddedSignup() {
     })();
   };
 
-  const launchWhatsAppSignup = () => {
+  const launchWhatsAppSignupWithConfig = (
+    configId: string | undefined,
+    variantLabel: string
+  ) => {
     setSessionInfo(null);
     setSdkResponse(null);
     setSubmitError(null);
 
-    if (!WHATSAPP_CONFIG_ID) {
-      console.error("Falta NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID");
+    if (!configId) {
+      console.error("Falta configId para la variante:", variantLabel);
       setSubmitError(
-        "Falta configurar el ID de configuración de WhatsApp (NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID)."
+        `Falta configurar el ID de configuración de WhatsApp para la variante "${variantLabel}".`
       );
       return;
     }
@@ -160,27 +165,44 @@ export default function WhatsappEmbeddedSignup() {
         fbLoginCallback(response);
       },
       {
-        config_id: WHATSAPP_CONFIG_ID,
+        config_id: configId,
         response_type: "code",
         override_default_response_type: true,
-        extras: {
-          featureType: "whatsapp_business_app_onboarding",
-          sessionInfoVersion: "3",
-          version: "v3",
-        },
+        extras: { version: "v3" },
       }
     );
+  };
+
+  const launchWhatsAppSignupCtwa = () => {
+    launchWhatsAppSignupWithConfig(WHATSAPP_CONFIG_ID_CTWA, "CTWA");
+  };
+
+  const launchWhatsAppSignupNoCtwa = () => {
+    launchWhatsAppSignupWithConfig(WHATSAPP_CONFIG_ID_NO_CTWA, "sin CTWA");
   };
 
   return (
     <div className="space-y-4">
       <button
         type="button"
-        onClick={launchWhatsAppSignup}
+        onClick={launchWhatsAppSignupCtwa}
         disabled={isSubmitting}
         className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
-        {isSubmitting ? "Conectando con WhatsApp..." : "Conectar cuenta de WhatsApp"}
+        {isSubmitting
+          ? "Conectando con WhatsApp..."
+          : "Conectar cuenta de WhatsApp con CTWA"}
+      </button>
+
+      <button
+        type="button"
+        onClick={launchWhatsAppSignupNoCtwa}
+        disabled={isSubmitting}
+        className="mt-2 rounded bg-blue-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        {isSubmitting
+          ? "Conectando con WhatsApp..."
+          : "Conectar cuenta de WhatsApp sin CTWA"}
       </button>
 
       {submitError && (
