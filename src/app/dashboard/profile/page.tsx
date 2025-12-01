@@ -10,6 +10,8 @@ export default async function ProfilePage() {
   const user = await prisma.user.findUnique({ where: { email: session.user.email }, include: { profile: true } });
   if (!user?.profile) return <p className="p-6">Crea tu perfil primero.</p>;
 
+  const profile: any = null;
+
   return (
     <DashboardLayout>
       <div className="mb-6">
