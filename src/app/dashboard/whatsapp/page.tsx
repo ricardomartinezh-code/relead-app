@@ -1,11 +1,12 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { getSession } from "@/lib/auth";
 import Script from "next/script";
+import { redirect } from "next/navigation";
 import WhatsappEmbeddedSignup from "./WhatsappEmbeddedSignup";
 
 export default async function WhatsappPage() {
   const session = await getSession();
-  if (!session?.user?.email) return <p className="p-6">No autorizado</p>;
+  if (!session?.user?.email) redirect("/auth/login");
 
   return (
     <DashboardLayout>
