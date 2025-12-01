@@ -19,13 +19,17 @@ export function LinkButtons({ links }: { links: LinkModel[] }) {
   return (
     <div className="space-y-3">
       {links.map((link) => (
-        <button
+        <a
           key={link.id}
-          onClick={() => handleClick(link)}
-          className="flex w-full items-center justify-center rounded-lg bg-white px-4 py-3 text-lg font-semibold text-gray-900 shadow hover:-translate-y-0.5 hover:shadow-lg transition"
+          href={link.url}
+          onClick={(event) => {
+            event.preventDefault();
+            void handleClick(link);
+          }}
+          className="block w-full rounded-full bg-white text-slate-900 text-sm font-medium px-4 py-3 text-center shadow-md hover:shadow-lg hover:scale-[1.01] transition"
         >
           {link.label}
-        </button>
+        </a>
       ))}
     </div>
   );
