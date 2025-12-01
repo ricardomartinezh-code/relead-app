@@ -163,7 +163,11 @@ export default function WhatsappEmbeddedSignup() {
         config_id: WHATSAPP_CONFIG_ID,
         response_type: "code",
         override_default_response_type: true,
-        extras: { version: "v3" },
+        extras: {
+          featureType: "whatsapp_business_app_onboarding",
+          sessionInfoVersion: "3",
+          version: "v3",
+        },
       }
     );
   };
