@@ -2,14 +2,9 @@ const TermsPage = () => {
   return (
     <main className="min-h-screen bg-slate-50">
       <div className="max-w-3xl mx-auto px-4 py-10">
-        <p className="sr-only">Documento legal de términos y condiciones de ReLead Digital.</p>
-        <a className="skip-link" href="#contenido-principal">
-          Saltar al contenido principal
-        </a>
-
         <h1 className="text-3xl font-semibold mb-6">Términos y condiciones</h1>
 
-        <div id="contenido-principal" className="prose prose-slate">
+        <div className="prose prose-slate">
           <p className="uppercase tracking-wide text-sm text-gray-500">Legal</p>
           <h1>Términos y Condiciones de Uso — ReLead Digital</h1>
           <p>
