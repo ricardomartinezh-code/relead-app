@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 
+import { prisma } from "@/lib/prisma";
+
+type RequestBody = {
+  code?: string;
+  phone_number_id?: string;
+  waba_id?: string;
+  label?: string;
+};
+
 export async function POST(request: Request) {
-  let body: {
-    code?: string;
-    phone_number_id?: string;
-    waba_id?: string;
-  };
+  let body: RequestBody;
 
   try {
     body = await request.json();
@@ -16,9 +21,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const { code, phone_number_id, waba_id } = body ?? {};
+  const { code, phone_number_id: phoneNumberId, waba_id: wabaId, label } =
+    body ?? {};
 
-  if (!code || !phone_number_id || !waba_id) {
+  if (!code || !phoneNumberId || !wabaId) {
     return NextResponse.json(
       { error: "Faltan datos: code, phone_number_id o waba_id" },
       { status: 400 },
@@ -26,9 +32,6 @@ export async function POST(request: Request) {
   }
 
   const { META_APP_ID, META_APP_SECRET, META_REDIRECT_URI } = process.env;
-  // META_REDIRECT_URI debe coincidir exactamente con la URL donde se ejecuta FB.login,
-  // en este caso: https://relead.com.mx/dashboard/whatsapp
-  // y la misma URL debe estar registrada como "Valid OAuth Redirect URI" en Meta Developers.
 
   if (!META_APP_ID || !META_APP_SECRET || !META_REDIRECT_URI) {
     return NextResponse.json(
@@ -37,44 +40,78 @@ export async function POST(request: Request) {
     );
   }
 
-  const params = new URLSearchParams({
-    client_id: META_APP_ID,
-    client_secret: META_APP_SECRET,
-    redirect_uri: META_REDIRECT_URI,
-    code,
-  });
+  try {
+    const params = new URLSearchParams({
+      client_id: META_APP_ID,
+      client_secret: META_APP_SECRET,
+      redirect_uri: META_REDIRECT_URI,
+      code,
+    });
 
-  const metaResponse = await fetch(
-    `https://graph.facebook.com/v24.0/oauth/access_token?${params.toString()}`,
-    { method: "GET" },
-  );
+    const metaResponse = await fetch(
+      `https://graph.facebook.com/v24.0/oauth/access_token?${params.toString()}`,
+      { method: "GET" },
+    );
 
-  if (!metaResponse.ok) {
-    const errorText = await metaResponse.text();
+    if (!metaResponse.ok) {
+      const errorText = await metaResponse.text();
+      // eslint-disable-next-line no-console
+      console.error("Error al obtener el access_token de Meta:", errorText);
+
+      return NextResponse.json(
+        { error: "No se pudo obtener el access_token de Meta" },
+        { status: 500 },
+      );
+    }
+
+    const tokenData = (await metaResponse.json()) as {
+      access_token?: string;
+      token_type?: string;
+      expires_in?: number;
+      [key: string]: unknown;
+    };
+
+    if (!tokenData.access_token) {
+      return NextResponse.json(
+        { error: "Meta no regresó un access_token válido" },
+        { status: 500 },
+      );
+    }
+
+    const account = await prisma.whatsAppAccount.upsert({
+      where: { phoneNumberId },
+      update: {
+        wabaId,
+        accessToken: tokenData.access_token,
+        expiresIn:
+          typeof tokenData.expires_in === "number" ? tokenData.expires_in : null,
+        label,
+      },
+      create: {
+        phoneNumberId,
+        wabaId,
+        accessToken: tokenData.access_token,
+        expiresIn:
+          typeof tokenData.expires_in === "number" ? tokenData.expires_in : null,
+        label,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      phoneNumberId,
+      wabaId,
+      expiresIn: account.expiresIn,
+      label: account.label,
+      accessTokenPreview: tokenData.access_token.substring(0, 10),
+    });
+  } catch (error) {
     // eslint-disable-next-line no-console
-    console.error("Error al obtener el access_token de Meta:", errorText);
+    console.error("Error en complete-signup:", error);
 
     return NextResponse.json(
-      { error: "No se pudo obtener el access_token de Meta" },
+      { error: "Ocurrió un error al completar el registro" },
       { status: 500 },
     );
   }
-
-  const tokenData = (await metaResponse.json()) as {
-    access_token?: string;
-    token_type?: string;
-    expires_in?: number;
-    [key: string]: unknown;
-  };
-
-  const { access_token, expires_in } = tokenData;
-
-  // TODO: Guardar credenciales en la base de datos y continuar con la configuración de la API de WhatsApp Cloud.
-  return NextResponse.json({
-    success: true,
-    access_token_preview: access_token?.substring(0, 10),
-    expires_in,
-    phone_number_id,
-    waba_id,
-  });
 }
