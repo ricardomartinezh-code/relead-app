@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+declare const FB: any;
+
 type EmbeddedSignupMessage = {
   type?: string;
   event?: string;
@@ -152,7 +154,6 @@ export default function WhatsappEmbeddedSignup() {
       return;
     }
 
-    // @ts-expect-error FB viene del SDK global
     FB.login(fbLoginCallback, {
       config_id: WHATSAPP_CONFIG_ID,
       response_type: "code",
