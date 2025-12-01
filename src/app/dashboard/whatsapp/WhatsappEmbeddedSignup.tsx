@@ -9,6 +9,11 @@ type EmbeddedSignupMessage = {
   waba_id?: string;
   current_step?: string;
   error_message?: string;
+  data?: {
+    phone_number_id?: string;
+    waba_id?: string;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 };
 
@@ -27,20 +32,24 @@ const allowedOrigins = ["https://www.facebook.com", "https://web.facebook.com"];
 export default function WhatsappEmbeddedSignup() {
   const [sessionInfo, setSessionInfo] = useState<EmbeddedSignupMessage | null>(null);
   const [sdkResponse, setSdkResponse] = useState<FbLoginResponse | null>(null);
-  const [waIds, setWaIds] = useState({ phoneNumberId: "", wabaId: "" });
+  const [waIds, setWaIds] = useState<{ phoneNumberId?: string; wabaId?: string }>({});
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (!allowedOrigins.includes(event.origin)) return;
 
       try {
-        const data = JSON.parse(event.data as string) as EmbeddedSignupMessage;
+        const data = (typeof event.data === "string"
+          ? JSON.parse(event.data)
+          : event.data) as EmbeddedSignupMessage;
 
         if (data.type === "WA_EMBEDDED_SIGNUP") {
           if (data.event === "FINISH") {
+            const { phone_number_id, waba_id } = data.data ?? {};
+
             setWaIds({
-              phoneNumberId: data.phone_number_id ?? "",
-              wabaId: data.waba_id ?? "",
+              phoneNumberId: phone_number_id,
+              wabaId: waba_id,
             });
           } else if (data.event === "CANCEL") {
             // eslint-disable-next-line no-console
@@ -86,10 +95,10 @@ export default function WhatsappEmbeddedSignup() {
           const data = await res.json();
           // eslint-disable-next-line no-console
           console.log("Respuesta de complete-signup:", data);
-          // TODO: Mostrar feedback en UI o redirigir después de un onboarding exitoso.
+          // TODO: Reaccionar en UI a la respuesta exitosa (mensaje o redirección).
         } catch (error) {
           // eslint-disable-next-line no-console
-          console.error("Error al completar el signup de WhatsApp:", error);
+          console.error("Error llamando a /api/whatsapp/complete-signup:", error);
         }
       }
     }

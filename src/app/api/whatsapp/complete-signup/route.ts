@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
   if (!code || !phone_number_id || !waba_id) {
     return NextResponse.json(
-      { error: "Faltan parámetros requeridos: code, phone_number_id, waba_id" },
+      { error: "Faltan datos: code, phone_number_id o waba_id" },
       { status: 400 },
     );
   }
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
   if (!META_APP_ID || !META_APP_SECRET || !META_REDIRECT_URI) {
     return NextResponse.json(
-      { error: "Variables de entorno de Meta no configuradas" },
+      { error: "Faltan variables de entorno para Meta" },
       { status: 500 },
     );
   }
@@ -64,12 +64,11 @@ export async function POST(request: Request) {
     [key: string]: unknown;
   };
 
-  const { access_token, token_type, expires_in } = tokenData;
+  const { access_token, expires_in } = tokenData;
 
-  // TODO: Persistir credenciales y completar la configuración de la API de WhatsApp Cloud.
+  // TODO: Guardar credenciales en la base de datos y continuar con la configuración de la API de WhatsApp Cloud.
   return NextResponse.json({
     success: true,
-    token_type,
     access_token_preview: access_token?.substring(0, 10),
     expires_in,
     phone_number_id,
