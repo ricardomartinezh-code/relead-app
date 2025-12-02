@@ -18,12 +18,13 @@ export default async function LinksPage() {
 
   return (
     <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Links</h1>
-        <p className="text-sm text-gray-600">Administra tus enlaces públicos.</p>
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold text-slate-900">Enlaces</h1>
+          <p className="text-sm text-slate-600">Crea y organiza los botones que verán en tu página pública.</p>
+        </div>
+        <LinksManager />
       </div>
-      {/* TODO: implementar lógica real de perfil para decidir el renderizado */}
-      <LinksManager />
     </DashboardLayout>
   );
 }

@@ -17,7 +17,7 @@ export function LinkButtons({ links }: { links: LinkModel[] }) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="w-full space-y-3">
       {links.map((link) => (
         <a
           key={link.id}
@@ -26,7 +26,9 @@ export function LinkButtons({ links }: { links: LinkModel[] }) {
             event.preventDefault();
             void handleClick(link);
           }}
-          className="block w-full rounded-full bg-white text-slate-900 text-sm font-medium px-4 py-3 text-center shadow-md hover:shadow-lg hover:scale-[1.01] transition"
+          className="w-full rounded-xl bg-slate-800/70 px-4 py-3 text-center text-sm font-medium text-slate-100 shadow-sm transition-transform hover:-translate-y-[1px] hover:bg-slate-700"
+          target="_blank"
+          rel="noopener noreferrer"
         >
           {link.label}
         </a>
