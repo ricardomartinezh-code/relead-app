@@ -1,13 +1,14 @@
 "use client";
 
 import { Link as LinkModel } from "@prisma/client";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 export function LinksManager() {
   const [links, setLinks] = useState<LinkModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [formState, setFormState] = useState({ label: "", url: "", order: 0, isActive: true });
   const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const fetchLinks = async () => {
     const res = await fetch("/api/links");
@@ -50,40 +51,70 @@ export function LinksManager() {
     fetchLinks();
   };
 
-  if (loading) return <p>Cargando links...</p>;
+  const handleEmptyCta = () => {
+    formRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const inputClassName =
+    "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200";
+
+  if (loading) {
+    return <p className="text-sm text-slate-600">Cargando enlaces...</p>;
+  }
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleCreate} className="grid gap-3 rounded-lg bg-gray-50 p-4">
-        <div className="grid gap-2 sm:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-medium">Etiqueta</label>
-            <input value={formState.label} onChange={(e) => setFormState({ ...formState, label: e.target.value })} required />
+      <form
+        ref={formRef}
+        onSubmit={handleCreate}
+        className="space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+      >
+        <div className="flex flex-col gap-4 md:flex-row md:gap-6">
+          <div className="flex-1 space-y-1">
+            <label className="text-sm font-medium text-slate-800">Título del enlace</label>
+            <input
+              value={formState.label}
+              onChange={(e) => setFormState({ ...formState, label: e.target.value })}
+              required
+              className={inputClassName}
+              placeholder="Ej. Video nuevo en YouTube"
+            />
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">URL</label>
-            <input value={formState.url} onChange={(e) => setFormState({ ...formState, url: e.target.value })} required />
+          <div className="flex-1 space-y-1">
+            <label className="text-sm font-medium text-slate-800">URL</label>
+            <input
+              value={formState.url}
+              onChange={(e) => setFormState({ ...formState, url: e.target.value })}
+              required
+              className={inputClassName}
+              placeholder="https://..."
+            />
           </div>
         </div>
-        <div className="grid gap-2 sm:grid-cols-3">
-          <div>
-            <label className="mb-1 block text-sm font-medium">Orden</label>
+        <div className="grid gap-4 md:grid-cols-3 md:items-center">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-slate-800">Orden</label>
             <input
               type="number"
               value={formState.order}
               onChange={(e) => setFormState({ ...formState, order: Number(e.target.value) })}
+              className={inputClassName}
             />
           </div>
-          <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-sm text-slate-800">
             <input
               type="checkbox"
               checked={formState.isActive}
               onChange={(e) => setFormState({ ...formState, isActive: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-200"
             />
-            <span className="text-sm text-gray-700">Activo</span>
-          </div>
-          <div className="flex items-end">
-            <button type="submit" className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+            Activo
+          </label>
+          <div className="flex md:justify-end">
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800"
+            >
               Crear link
             </button>
           </div>
@@ -91,38 +122,55 @@ export function LinksManager() {
         {error && <p className="text-sm text-red-600">{error}</p>}
       </form>
 
-      <div className="divide-y rounded-lg bg-white shadow">
-        {links.map((link) => (
-          <div key={link.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-900">{link.label}</p>
-              <p className="text-sm text-gray-600">{link.url}</p>
-              <p className="text-xs text-gray-500">Orden: {link.order} · {link.isActive ? "Activo" : "Inactivo"}</p>
+      {links.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
+          <h3 className="text-lg font-semibold text-slate-900">Aún no tienes enlaces</h3>
+          <p className="max-w-lg text-sm text-slate-600">
+            Crea tu primer botón para empezar a compartir tu contenido desde ReLead.
+          </p>
+          <button
+            onClick={handleEmptyCta}
+            className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800"
+          >
+            Crear primer enlace
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {links.map((link) => (
+            <div
+              key={link.id}
+              className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 md:flex-row md:items-center md:justify-between"
+            >
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-slate-900">{link.label}</p>
+                <p className="text-xs text-slate-600">{link.url}</p>
+                <p className="text-xs text-slate-500">Orden: {link.order} · {link.isActive ? "Activo" : "Inactivo"}</p>
+              </div>
+              <div className="flex flex-wrap gap-2 text-sm">
+                <button
+                  className="rounded-full border border-slate-300 px-3 py-2 text-slate-800 transition hover:border-slate-400"
+                  onClick={() => handleUpdate(link.id, { isActive: !link.isActive })}
+                >
+                  {link.isActive ? "Desactivar" : "Activar"}
+                </button>
+                <button
+                  className="rounded-full border border-slate-300 px-3 py-2 text-slate-800 transition hover:border-slate-400"
+                  onClick={() => handleUpdate(link.id, { order: link.order + 1 })}
+                >
+                  + Orden
+                </button>
+                <button
+                  className="rounded-full border border-slate-300 px-3 py-2 text-red-600 transition hover:border-red-300"
+                  onClick={() => handleDelete(link.id)}
+                >
+                  Eliminar
+                </button>
+              </div>
             </div>
-            <div className="flex gap-2 text-sm">
-              <button
-                className="rounded-md border px-3 py-2"
-                onClick={() => handleUpdate(link.id, { isActive: !link.isActive })}
-              >
-                {link.isActive ? "Desactivar" : "Activar"}
-              </button>
-              <button
-                className="rounded-md border px-3 py-2"
-                onClick={() => handleUpdate(link.id, { order: link.order + 1 })}
-              >
-                + Orden
-              </button>
-              <button
-                className="rounded-md border px-3 py-2 text-red-600"
-                onClick={() => handleDelete(link.id)}
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
-        ))}
-        {links.length === 0 && <p className="p-4 text-sm text-gray-600">Aún no tienes links.</p>}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

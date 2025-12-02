@@ -16,21 +16,22 @@ export default async function ProfilePage() {
   const user = await prisma.user.findUnique({ where: { email: session.user.email }, include: { profile: true } });
   if (!user?.profile) return <p className="p-6">Crea tu perfil primero.</p>;
 
-  const profile: any = null;
+  const profile = user.profile;
 
   return (
     <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Perfil</h1>
-        <p className="text-sm text-gray-600">Actualiza la información de tu página pública.</p>
-      </div>
-      {profile ? (
-        <div className="rounded-lg bg-white p-6 shadow">
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold text-slate-900">Perfil público</h1>
+          <p className="text-sm text-slate-600">
+            La información que completes aquí se mostrará en tu página de enlaces.
+          </p>
+        </div>
+
+        <div className="max-w-xl space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <ProfileForm profile={profile} />
         </div>
-      ) : (
-        <p className="p-6">Crea tu perfil primero.</p>
-      )}
+      </div>
     </DashboardLayout>
   );
 }
