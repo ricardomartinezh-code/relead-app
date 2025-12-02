@@ -37,11 +37,23 @@ export default function LoginForm() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium">Email</label>
-            <input name="email" type="email" placeholder="tu@email.com" required />
+            <input
+              name="email"
+              type="email"
+              placeholder="tu@email.com"
+              required
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Contraseña</label>
-            <input name="password" type="password" placeholder="******" required />
+            <input
+              name="password"
+              type="password"
+              placeholder="******"
+              required
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button
