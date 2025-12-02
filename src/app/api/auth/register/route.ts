@@ -44,8 +44,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Cuenta creada correctamente." });
   } catch (error) {
     console.error("Register error:", error);
+
+    const isDev = process.env.NODE_ENV === "development";
     return NextResponse.json(
-      { message: "Error al crear la cuenta." },
+      {
+        message: "Error al crear la cuenta.",
+        ...(isDev && { devError: (error as Error)?.message ?? String(error) }),
+      },
       { status: 500 }
     );
   }
