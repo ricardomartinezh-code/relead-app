@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -12,20 +13,19 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const form = new FormData(e.currentTarget);
-    const res = await fetch("/api/register", {
+    const res = await fetch("/api/auth/register", {
       method: "POST",
       body: JSON.stringify({
-        name: form.get("name"),
-        email: form.get("email"),
-        password: form.get("password"),
+        name: form.name,
+        email: form.email,
+        password: form.password,
       }),
       headers: { "Content-Type": "application/json" },
     });
+    const data = await res.json();
     setLoading(false);
     if (!res.ok) {
-      const data = await res.json();
-      setError(data.error || "No se pudo crear la cuenta");
+      setError(data.message || "No se pudo crear la cuenta.");
       return;
     }
     router.push("/auth/login");
@@ -39,15 +39,38 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium">Nombre</label>
-            <input name="name" placeholder="Tu nombre" required />
+            <input
+              name="name"
+              placeholder="Tu nombre"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Email</label>
-            <input name="email" type="email" placeholder="tu@email.com" required />
+            <input
+              name="email"
+              type="email"
+              placeholder="tu@email.com"
+              required
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Contraseña</label>
-            <input name="password" type="password" placeholder="******" minLength={6} required />
+            <input
+              name="password"
+              type="password"
+              placeholder="******"
+              minLength={6}
+              required
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button
