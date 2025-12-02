@@ -11,7 +11,7 @@ const WHATSAPP_CONFIG_ID_NO_CTWA =
 const WHATSAPP_EXTRAS = {
   featureType: "whatsapp_business_app_onboarding",
   sessionInfoVersion: "3",
-  version: "v3",
+  version: "v2",
 };
 
 type EmbeddedSignupMessage = any;
