@@ -6,7 +6,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("postgres://51be899629cfe0e931283e050ff02879c1a73b1bebc40c1cc3ad1af874cfa53f:sk_Uxzbb4aI_dZ47KmtbSf78@db.prisma.io:5432/postgres?sslmode=require")
 }
 
 model User {
