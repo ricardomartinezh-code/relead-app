@@ -1,4 +1,4 @@
-// Prisma schema for ReLead
+DATABASE_URL="postgres://51be899629cfe0e931283e050ff02879c1a73b1bebc40c1cc3ad1af874cfa53f:sk_Uxzbb4aI_dZ47KmtbSf78@db.prisma.io:5432/postgres?sslmode=require"// Prisma schema for ReLead
 
 generator client {
   provider = "prisma-client-js"
@@ -6,7 +6,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("postgres://51be899629cfe0e931283e050ff02879c1a73b1bebc40c1cc3ad1af874cfa53f:sk_Uxzbb4aI_dZ47KmtbSf78@db.prisma.io:5432/postgres?sslmode=require")
+  url      = env("DATABASE_URL")
 }
 
 model User {
