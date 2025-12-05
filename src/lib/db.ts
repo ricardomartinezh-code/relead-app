@@ -124,23 +124,25 @@ export async function createUser(
   email: string,
   name: string,
   password: string,
-  username?: string
-): Promise<UserRecord> {
+  username?: string,
+  slug?: string
+): Promise<UserRecord & { slug: string; username: string }> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
     const userId = randomUUID();
     const profileId = randomUUID();
-    const slug = await generateUniqueSlug(username || name);
+    const slugToUse = slug || (await generateUniqueSlug(username || name));
     const hashedPassword = hashSync(password, 10);
+    const usernameToUse = (username || email).trim().toLowerCase();
 
     // Crear usuario
     const userResult = await client.query(
       `INSERT INTO users (id, email, name, password, username, profile_id, is_active, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, true, CURRENT_TIMESTAMP)
        RETURNING id, email, name, profile_id AS "profileId"`,
-      [userId, email, name, hashedPassword, username || email, profileId]
+      [userId, email, name, hashedPassword, usernameToUse, profileId]
     );
 
     // Crear perfil básico
@@ -148,7 +150,7 @@ export async function createUser(
       `INSERT INTO profiles (id, user_id, title, slug, theme)
        VALUES ($1, $2, $3, $4, 'default')
        ON CONFLICT (id) DO NOTHING`,
-      [profileId, userId, name, slug]
+      [profileId, userId, name, slugToUse]
     );
 
     await client.query("COMMIT");
@@ -158,6 +160,8 @@ export async function createUser(
       email: userResult.rows[0].email,
       name: userResult.rows[0].name,
       profileId: userResult.rows[0].profileId,
+      username: usernameToUse,
+      slug: slugToUse,
     };
   } catch (error) {
     await client.query("ROLLBACK");
