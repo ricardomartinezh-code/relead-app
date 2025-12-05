@@ -1,9 +1,24 @@
 import { NextResponse } from "next/server";
-import { createUser, getUserByEmail, getUserByUsername } from "@/lib/db";
+
+import {
+  createUser,
+  getProfileBySlug,
+  getUserByEmail,
+  getUserByUsername,
+} from "@/lib/db";
+import { USERNAME_RULES_MESSAGE, validateUsernameInput } from "@/lib/username";
 
 export async function POST(req: Request) {
   try {
     const { name, email, password, username } = await req.json();
+
+    const usernameValidation = validateUsernameInput(username);
+    if (!usernameValidation.valid || !usernameValidation.normalized) {
+      return NextResponse.json(
+        { message: usernameValidation.message ?? USERNAME_RULES_MESSAGE },
+        { status: 400 }
+      );
+    }
 
     if (!email || !password) {
       return NextResponse.json(
@@ -28,27 +43,49 @@ export async function POST(req: Request) {
       );
     }
 
-    // Verificar si el username ya existe (si se proporciona)
-    if (username) {
-      const existingUsername = await getUserByUsername(username);
-      if (existingUsername) {
-        return NextResponse.json(
-          { message: "El nombre de usuario ya está en uso." },
-          { status: 400 }
-        );
-      }
+    const [existingUsername, existingSlug] = await Promise.all([
+      getUserByUsername(usernameValidation.normalized),
+      getProfileBySlug(usernameValidation.normalized),
+    ]);
+
+    if (existingUsername) {
+      return NextResponse.json(
+        { message: "El nombre de usuario ya está en uso." },
+        { status: 400 }
+      );
     }
 
-    const newUser = await createUser(email, name || email, password, username);
+    if (existingSlug) {
+      return NextResponse.json(
+        {
+          message:
+            "Ese slug ya está asignado a otro perfil. Elige otro nombre de usuario.",
+        },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json({
-      message: "Cuenta creada correctamente.",
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
+    const newUser = await createUser(
+      email,
+      name || email,
+      password,
+      usernameValidation.normalized,
+      usernameValidation.normalized
+    );
+
+    return NextResponse.json(
+      {
+        message: "Cuenta creada correctamente.",
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          name: newUser.name,
+        },
+        username: newUser.username,
+        slug: newUser.slug,
       },
-    });
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Register error:", error);
 
