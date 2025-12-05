@@ -70,6 +70,28 @@ pool.on("error", (err) => {
 });
 
 /**
+ * Garantiza vistas de compatibilidad esperadas por clientes Prisma heredados.
+ * Vercel registró errores buscando la tabla/VIEW "Profile", así que creamos
+ * la vista si no existe.
+ */
+async function ensureCompatibilityViews() {
+  if (!process.env.DATABASE_URL) return;
+
+  try {
+    await pool.query(`
+      CREATE OR REPLACE VIEW "Profile" AS
+      SELECT id, user_id, title, bio, avatar_url, slug, theme
+      FROM profiles;
+    `);
+  } catch (error) {
+    console.error("No se pudo crear la vista de compatibilidad 'Profile':", error);
+  }
+}
+
+// Ejecutar la creación de vistas de compatibilidad al cargar el módulo
+ensureCompatibilityViews();
+
+/**
  * Obtener un usuario por email
  */
 export async function getUserByEmail(email: string): Promise<UserRecord | null> {
