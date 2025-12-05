@@ -132,6 +132,7 @@ export async function createUser(
 
     const userId = randomUUID();
     const profileId = randomUUID();
+    const slug = await generateUniqueSlug(username || name);
     const hashedPassword = hashSync(password, 10);
 
     // Crear usuario
@@ -147,7 +148,7 @@ export async function createUser(
       `INSERT INTO profiles (id, user_id, title, slug, theme)
        VALUES ($1, $2, $3, $4, 'default')
        ON CONFLICT (id) DO NOTHING`,
-      [profileId, userId, name]
+      [profileId, userId, name, slug]
     );
 
     await client.query("COMMIT");
