@@ -1,6 +1,6 @@
 import { getServerSession, type NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { verifyCredentials } from "./mockDb";
+import { verifyCredentials } from "./db";
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },

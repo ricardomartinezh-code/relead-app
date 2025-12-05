@@ -1,28 +1,44 @@
 import { getSession } from "@/lib/auth";
-import { getUserWithProfileByEmail, updateProfile } from "@/lib/mockDb";
+import { getUserById, getProfileById, updateProfile } from "@/lib/db";
 import { NextResponse } from "next/server";
+
+export async function GET(req: Request) {
+  const session = await getSession();
+  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+  try {
+    const user = await getUserById(session.user.id);
+    if (!user?.profileId) return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 });
+
+    const profile = await getProfileById(user.profileId);
+    return NextResponse.json(profile);
+  } catch (error) {
+    console.error("Error obteniendo perfil:", error);
+    return NextResponse.json({ error: "Error al obtener perfil" }, { status: 500 });
+  }
+}
 
 export async function POST(req: Request) {
   const session = await getSession();
-  if (!session?.user?.email) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  const body = await req.json();
-  const { title, bio, avatarUrl, slug, theme } = body ?? {};
+  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
-  const user = getUserWithProfileByEmail(session.user.email);
-  if (!user?.profile) return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 });
+  try {
+    const body = await req.json();
+    const { title, bio, avatarUrl, theme } = body ?? {};
 
-  const updated = updateProfile({
-    profileId: user.profile.id,
-    title,
-    bio,
-    avatarUrl,
-    slug,
-    theme,
-  });
+    const user = await getUserById(session.user.id);
+    if (!user?.profileId) return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 });
 
-  if (updated === "slug-taken") {
-    return NextResponse.json({ error: "Slug no disponible" }, { status: 400 });
+    const updated = await updateProfile(user.profileId, {
+      title,
+      bio,
+      avatarUrl,
+      theme,
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error("Error actualizando perfil:", error);
+    return NextResponse.json({ error: "Error al actualizar perfil" }, { status: 500 });
   }
-
-  return NextResponse.json(updated);
 }

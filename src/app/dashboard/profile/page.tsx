@@ -1,12 +1,12 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ProfileForm } from "@/components/ProfileForm";
 import { getSession } from "@/lib/auth";
-import { getUserWithProfileByEmail } from "@/lib/mockDb";
+import { getUserById, getProfileById } from "@/lib/db";
 import Link from "next/link";
 
 export default async function ProfilePage() {
   const session = await getSession();
-  if (!session?.user?.email) {
+  if (!session?.user?.id) {
     return (
       <DashboardLayout>
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -31,10 +31,11 @@ export default async function ProfilePage() {
     );
   }
 
-  const user = getUserWithProfileByEmail(session.user.email);
-  if (!user?.profile) return <p className="p-6">Crea tu perfil primero.</p>;
+  const user = await getUserById(session.user.id);
+  if (!user?.profileId) return <p className="p-6">Crea tu perfil primero.</p>;
 
-  const profile = user.profile;
+  const profile = await getProfileById(user.profileId);
+  if (!profile) return <p className="p-6">Perfil no encontrado.</p>;
 
   return (
     <DashboardLayout>

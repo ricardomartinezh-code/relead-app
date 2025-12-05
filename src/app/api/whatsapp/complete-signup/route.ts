@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { upsertWhatsAppAccount } from "@/lib/mockDb";
+import { upsertWhatsAppAccount } from "@/lib/db";
 
 type RequestBody = {
   code?: string;
@@ -78,13 +78,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const account = upsertWhatsAppAccount({
+    const account = await upsertWhatsAppAccount(
       phoneNumberId,
       wabaId,
-      accessToken: tokenData.access_token,
-      expiresIn: typeof tokenData.expires_in === "number" ? tokenData.expires_in : null,
+      tokenData.access_token,
       label,
-    });
+      typeof tokenData.expires_in === "number" ? tokenData.expires_in : null
+    );
 
     return NextResponse.json({
       success: true,

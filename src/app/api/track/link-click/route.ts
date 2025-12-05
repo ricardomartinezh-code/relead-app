@@ -1,11 +1,17 @@
-import { recordLinkClick } from "@/lib/mockDb";
+import { recordLinkClick } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const { linkId, referrer, userAgent, ip } = body ?? {};
-  if (!linkId) return NextResponse.json({ error: "linkId requerido" }, { status: 400 });
-  const click = recordLinkClick({ linkId, referrer, userAgent, ip });
-  if (!click) return NextResponse.json({ error: "Link no encontrado" }, { status: 404 });
-  return NextResponse.json(click, { status: 201 });
+  try {
+    const body = await req.json();
+    const { linkId, referrer, userAgent, ip } = body ?? {};
+    
+    if (!linkId) return NextResponse.json({ error: "linkId requerido" }, { status: 400 });
+    
+    const click = await recordLinkClick(linkId, referrer, userAgent, ip);
+    return NextResponse.json(click, { status: 201 });
+  } catch (error) {
+    console.error("Error registrando clic:", error);
+    return NextResponse.json({ error: "Error al registrar clic" }, { status: 500 });
+  }
 }

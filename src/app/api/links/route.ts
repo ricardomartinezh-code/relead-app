@@ -1,29 +1,41 @@
 import { getSession } from "@/lib/auth";
-import { createLink, getLinksForProfile, getUserWithProfileByEmail } from "@/lib/mockDb";
+import { createLink, getLinksByProfileId, getUserById } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   const session = await getSession();
-  if (!session?.user?.email) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  const user = getUserWithProfileByEmail(session.user.email);
-  if (!user?.profile) return NextResponse.json([]);
-  const links = getLinksForProfile(user.profile.id);
-  return NextResponse.json(links);
+  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+  try {
+    const user = await getUserById(session.user.id);
+    if (!user?.profileId) return NextResponse.json([]);
+    const links = await getLinksByProfileId(user.profileId);
+    return NextResponse.json(links);
+  } catch (error) {
+    console.error("Error obteniendo enlaces:", error);
+    return NextResponse.json([], { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
   const session = await getSession();
-  if (!session?.user?.email) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  const user = getUserWithProfileByEmail(session.user.email);
-  if (!user?.profile) return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 });
-  const body = await req.json();
-  const { label, url, order = 0, isActive = true } = body ?? {};
-  const link = createLink({
-    label,
-    url,
-    order,
-    isActive,
-    profileId: user.profile.id,
-  });
-  return NextResponse.json(link, { status: 201 });
+  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+  try {
+    const user = await getUserById(session.user.id);
+    if (!user?.profileId) return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 });
+    
+    const body = await req.json();
+    const { label, url } = body ?? {};
+    
+    if (!label || !url) {
+      return NextResponse.json({ error: "Label y URL son obligatorios" }, { status: 400 });
+    }
+
+    const link = await createLink(user.profileId, label, url);
+    return NextResponse.json(link, { status: 201 });
+  } catch (error) {
+    console.error("Error creando enlace:", error);
+    return NextResponse.json({ error: "Error al crear enlace" }, { status: 500 });
+  }
 }

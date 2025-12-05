@@ -1,6 +1,6 @@
 "use client";
 
-import { type LinkRecord } from "@/lib/mockDb";
+import { type LinkRecord } from "@/lib/db";
 
 export function LinkButtons({ links }: { links: LinkRecord[] }) {
   const handleClick = async (link: LinkRecord) => {
