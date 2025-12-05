@@ -1,9 +1,9 @@
 "use client";
 
-import { Profile } from "@prisma/client";
 import { FormEvent, useState } from "react";
+import { type ProfileRecord } from "@/lib/mockDb";
 
-export function ProfileForm({ profile }: { profile: Profile }) {
+export function ProfileForm({ profile }: { profile: ProfileRecord }) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

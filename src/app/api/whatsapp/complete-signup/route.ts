@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
+import { upsertWhatsAppAccount } from "@/lib/mockDb";
 
 type RequestBody = {
   code?: string;
@@ -78,23 +78,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const account = await prisma.whatsAppAccount.upsert({
-      where: { phoneNumberId },
-      update: {
-        wabaId,
-        accessToken: tokenData.access_token,
-        expiresIn:
-          typeof tokenData.expires_in === "number" ? tokenData.expires_in : null,
-        label,
-      },
-      create: {
-        phoneNumberId,
-        wabaId,
-        accessToken: tokenData.access_token,
-        expiresIn:
-          typeof tokenData.expires_in === "number" ? tokenData.expires_in : null,
-        label,
-      },
+    const account = upsertWhatsAppAccount({
+      phoneNumberId,
+      wabaId,
+      accessToken: tokenData.access_token,
+      expiresIn: typeof tokenData.expires_in === "number" ? tokenData.expires_in : null,
+      label,
     });
 
     return NextResponse.json({

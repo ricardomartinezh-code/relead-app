@@ -1,9 +1,9 @@
 "use client";
 
-import { Link as LinkModel } from "@prisma/client";
+import { type LinkRecord } from "@/lib/mockDb";
 
-export function LinkButtons({ links }: { links: LinkModel[] }) {
-  const handleClick = async (link: LinkModel) => {
+export function LinkButtons({ links }: { links: LinkRecord[] }) {
+  const handleClick = async (link: LinkRecord) => {
     try {
       await fetch("/api/track/link-click", {
         method: "POST",

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
+import { findWhatsAppAccountByPhoneNumberId } from "@/lib/mockDb";
 
 type RequestBody = {
   phone_number_id?: string;
@@ -30,9 +30,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const account = await prisma.whatsAppAccount.findUnique({
-      where: { phoneNumberId },
-    });
+    const account = findWhatsAppAccountByPhoneNumberId(phoneNumberId);
 
     if (!account) {
       return NextResponse.json(
