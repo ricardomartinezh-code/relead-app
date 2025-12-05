@@ -8,9 +8,11 @@ ReLead es un servicio de "link in bio" construido con Next.js 14 (App Router), T
 
 ## Variables de entorno
 Copia `.env.example` a `.env` y completa los valores:
-- `DATABASE_URL`
+- `DATABASE_URL` (también se aceptan `POSTGRES_URL` o `PRISMA_DATABASE_URL`; la app los normaliza internamente hacia `DATABASE_URL`)
 - `NEXTAUTH_SECRET`
 - `NEXTAUTH_URL`
+
+En Vercel define **DATABASE_URL** con tu cadena de conexión de Prisma (puede ser directa a PostgreSQL o el enlace de Prisma Data Proxy). Si ya tienes `PRISMA_DATABASE_URL` o `POSTGRES_URL`, la app lo tomará automáticamente, pero es preferible tener `DATABASE_URL` configurada explícitamente.
 
 ## Scripts útiles
 - `npm install`
