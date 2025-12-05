@@ -4,10 +4,11 @@ import { NextResponse } from "next/server";
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const session = await getSession();
-  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   try {
-    const user = await getUserById(session.user.id);
+    const user = await getUserById(userId);
     if (!user?.profileId) return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 });
 
     const body = await req.json();
@@ -32,10 +33,11 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   const session = await getSession();
-  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   try {
-    const user = await getUserById(session.user.id);
+    const user = await getUserById(userId);
     if (!user?.profileId) return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 });
 
     const success = await deleteLink(params.id);

@@ -4,10 +4,11 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const session = await getSession();
-  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   try {
-    const user = await getUserById(session.user.id);
+    const user = await getUserById(userId);
     if (!user?.profileId) return NextResponse.json([]);
     const links = await getLinksByProfileId(user.profileId);
     return NextResponse.json(links);
@@ -19,10 +20,11 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await getSession();
-  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   try {
-    const user = await getUserById(session.user.id);
+    const user = await getUserById(userId);
     if (!user?.profileId) return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 });
     
     const body = await req.json();

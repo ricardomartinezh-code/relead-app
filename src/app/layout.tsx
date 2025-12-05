@@ -1,3 +1,4 @@
+import React from "react";
 import type { Metadata } from "next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
@@ -9,14 +10,25 @@ export const metadata: Metadata = {
   description: "Crea y comparte tu landing de links con ReLead",
 };
 
+const chatbaseHost = process.env.NEXT_PUBLIC_CHATBASE_HOST ?? "https://www.chatbase.co/";
+const chatbotId = process.env.NEXT_PUBLIC_CHATBOT_ID ?? "";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="es">
-      <body className="min-h-screen bg-gray-50 text-gray-900">
-        <MetaSdkProvider>
-          {children}
-          <SpeedInsights />
-          <Script id="chatbase-embed" strategy="afterInteractive">{`
+  return React.createElement(
+    "html",
+    { lang: "es" },
+    React.createElement(
+      "body",
+      { className: "min-h-screen bg-gray-50 text-gray-900" },
+      React.createElement(
+        MetaSdkProvider,
+        null,
+        children,
+        React.createElement(SpeedInsights, null),
+        React.createElement(
+          Script,
+          { id: "chatbase-embed", strategy: "afterInteractive" },
+          `
             (function() {
               if (!window.chatbase || window.chatbase("getState") !== "initialized") {
                 window.chatbase = (...arguments) => {
@@ -36,10 +48,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               }
               const onLoad = function() {
                 const script = document.createElement("script");
-                const host = "${process.env.NEXT_PUBLIC_CHATBASE_HOST ?? "https://www.chatbase.co/"}";
-                const normalizedHost = host.endsWith("/") ? host : `${host}/`;
-                script.src = `${normalizedHost}embed.min.js`;
-                script.id = "${process.env.NEXT_PUBLIC_CHATBOT_ID ?? ""}";
+                const host = "${chatbaseHost}";
+                const normalizedHost = host.endsWith("/") ? host : host + "/";
+                script.src = normalizedHost + "embed.min.js";
+                script.id = "${chatbotId}";
                 try {
                   script.domain = new URL(normalizedHost).hostname;
                 } catch {
@@ -53,9 +65,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 window.addEventListener("load", onLoad);
               }
             })();
-          `}</Script>
-        </MetaSdkProvider>
-      </body>
-    </html>
+          `,
+        ),
+      ),
+    ),
   );
 }

@@ -4,10 +4,11 @@ import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
   const session = await getSession();
-  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   try {
-    const user = await getUserById(session.user.id);
+    const user = await getUserById(userId);
     if (!user?.profileId) return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 });
 
     const profile = await getProfileById(user.profileId);
@@ -20,13 +21,14 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await getSession();
-  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   try {
     const body = await req.json();
     const { title, bio, avatarUrl, theme } = body ?? {};
 
-    const user = await getUserById(session.user.id);
+    const user = await getUserById(userId);
     if (!user?.profileId) return NextResponse.json({ error: "Perfil no encontrado" }, { status: 404 });
 
     const updated = await updateProfile(user.profileId, {

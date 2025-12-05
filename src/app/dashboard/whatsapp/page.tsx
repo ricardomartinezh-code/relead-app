@@ -10,7 +10,9 @@ import WhatsappTestMessagePanel from "./WhatsappTestMessagePanel";
 export default async function WhatsappPage() {
   const session = await getSession();
 
-  if (!session?.user?.id) {
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+
+  if (!userId) {
     return (
       <DashboardLayout>
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -37,7 +39,7 @@ export default async function WhatsappPage() {
     );
   }
 
-  const user = await getUserById(session.user.id);
+  const user = await getUserById(userId);
 
   if (!user?.profileId) {
     return (
