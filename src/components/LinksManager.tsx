@@ -1,10 +1,10 @@
 "use client";
 
-import { Link as LinkModel } from "@prisma/client";
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { type LinkRecord } from "@/lib/mockDb";
 
 export function LinksManager() {
-  const [links, setLinks] = useState<LinkModel[]>([]);
+  const [links, setLinks] = useState<LinkRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [formState, setFormState] = useState({ label: "", url: "", order: 0, isActive: true });
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export function LinksManager() {
     fetchLinks();
   };
 
-  const handleUpdate = async (id: string, changes: Partial<LinkModel>) => {
+  const handleUpdate = async (id: string, changes: Partial<LinkRecord>) => {
     await fetch(`/api/links/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

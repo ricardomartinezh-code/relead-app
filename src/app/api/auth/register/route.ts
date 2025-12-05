@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { hash } from "bcrypt";
 
-import { prisma } from "@/lib/prisma";
-import { generateUniqueSlug } from "@/lib/slug";
+import { createUserWithProfile } from "@/lib/mockDb";
 
 export async function POST(req: Request) {
   try {
@@ -15,35 +13,21 @@ export async function POST(req: Request) {
       );
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return NextResponse.json(
-        { message: "Ya existe una cuenta con ese correo." },
-        { status: 400 }
-      );
-    }
-
-    const hashed = await hash(password, 10);
     const baseSlug = (email as string).split("@")[0];
-    const slug = await generateUniqueSlug(baseSlug);
-
-    await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashed,
-        profile: {
-          create: {
-            slug,
-            title: name || slug,
-          },
-        },
-      },
+    await createUserWithProfile({
+      name: name || baseSlug,
+      email,
+      password,
+      slugBase: baseSlug,
     });
 
     return NextResponse.json({ message: "Cuenta creada correctamente." });
   } catch (error) {
     console.error("Register error:", error);
+
+    if ((error as Error)?.message?.includes("El email ya está registrado")) {
+      return NextResponse.json({ message: "Ya existe una cuenta con ese correo." }, { status: 400 });
+    }
 
     const isDev = process.env.NODE_ENV === "development";
     return NextResponse.json(

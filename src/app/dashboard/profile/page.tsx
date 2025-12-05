@@ -1,7 +1,7 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ProfileForm } from "@/components/ProfileForm";
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getUserWithProfileByEmail } from "@/lib/mockDb";
 import Link from "next/link";
 
 export default async function ProfilePage() {
@@ -31,7 +31,7 @@ export default async function ProfilePage() {
     );
   }
 
-  const user = await prisma.user.findUnique({ where: { email: session.user.email }, include: { profile: true } });
+  const user = getUserWithProfileByEmail(session.user.email);
   if (!user?.profile) return <p className="p-6">Crea tu perfil primero.</p>;
 
   const profile = user.profile;

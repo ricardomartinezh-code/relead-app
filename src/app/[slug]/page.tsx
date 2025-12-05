@@ -1,5 +1,5 @@
 import { LinkButtons } from "@/components/PublicLinks";
-import { prisma } from "@/lib/prisma";
+import { findProfileBySlug, getActiveLinksForSlug, recordPageView } from "@/lib/mockDb";
 import { headers } from "next/headers";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -12,17 +12,15 @@ function getInitials(text: string) {
 }
 
 export default async function PublicProfilePage({ params }: { params: { slug: string } }) {
-  const profile = await prisma.profile.findUnique({
-    where: { slug: params.slug },
-    include: { links: { where: { isActive: true }, orderBy: { order: "asc" } } },
-  });
+  const profile = findProfileBySlug(params.slug);
+  const links = getActiveLinksForSlug(params.slug) || [];
   if (!profile) return notFound();
 
   const hdrs = headers();
   const referrer = hdrs.get("referer") || undefined;
   const userAgent = hdrs.get("user-agent") || undefined;
   const ip = hdrs.get("x-forwarded-for") || undefined;
-  await prisma.pageView.create({ data: { profileId: profile.id, referrer, userAgent, ip } });
+  recordPageView({ profileId: profile.id, referrer, userAgent, ip });
 
   const initials = getInitials(profile.title || "ReLead");
 
@@ -49,7 +47,7 @@ export default async function PublicProfilePage({ params }: { params: { slug: st
           </div>
         </div>
 
-        <LinkButtons links={profile.links} />
+        <LinkButtons links={links} />
 
         <p className="mt-6 text-center text-xs text-slate-500">Hecho con ReLead · relead.com.mx</p>
       </div>
