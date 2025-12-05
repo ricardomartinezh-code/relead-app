@@ -9,6 +9,8 @@ ReLead es un servicio de "link in bio" construido con Next.js 14 (App Router), T
 Copia `.env.example` a `.env` y completa los valores:
 - `NEXTAUTH_SECRET`
 - `NEXTAUTH_URL`
+- `NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_CTWA` (ID de configuración de onboarding con CTWA)
+- `NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_NO_CTWA` (ID de configuración de onboarding sin CTWA)
 
 ## Scripts útiles
 - `npm install`
