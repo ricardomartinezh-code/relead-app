@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { useMetaSdk } from "@/app/providers/MetaSdkProvider";
+
 declare const FB: any;
 
 const allowedOrigins = ["https://www.facebook.com", "https://web.facebook.com"];
@@ -24,6 +26,7 @@ type WaIdsState = {
 };
 
 export default function WhatsappEmbeddedSignup() {
+  const { isReady: isMetaSdkReady, error: sdkError, redirectUri } = useMetaSdk();
   const [sessionInfo, setSessionInfo] = useState<EmbeddedSignupMessage | null>(null);
   const [sdkResponse, setSdkResponse] = useState<FbLoginResponse | null>(null);
   const [waIds, setWaIds] = useState<WaIdsState>({
@@ -34,6 +37,12 @@ export default function WhatsappEmbeddedSignup() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitResult, setSubmitResult] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (sdkError) {
+      setSubmitError(sdkError);
+    }
+  }, [sdkError]);
 
   // Escuchamos los mensajes del flujo WA_EMBEDDED_SIGNUP
   useEffect(() => {
@@ -157,10 +166,10 @@ export default function WhatsappEmbeddedSignup() {
       return;
     }
 
-    if (typeof FB === "undefined") {
+    if (!isMetaSdkReady || typeof FB === "undefined") {
       console.error("El SDK de Facebook aún no está disponible (FB es undefined).");
       setSubmitError(
-        "El SDK de Facebook todavía no terminó de cargar. Actualiza la página, espera unos segundos y vuelve a intentar."
+        "El SDK de Facebook todavía no terminó de cargar. Espera unos segundos y vuelve a intentar."
       );
       return;
     }
@@ -174,6 +183,7 @@ export default function WhatsappEmbeddedSignup() {
         response_type: "code",
         override_default_response_type: true,
         extras: WHATSAPP_EXTRAS,
+        redirect_uri: redirectUri ?? undefined,
       }
     );
   };
@@ -191,7 +201,7 @@ export default function WhatsappEmbeddedSignup() {
       <button
         type="button"
         onClick={launchWhatsAppSignupCtwa}
-        disabled={isSubmitting}
+        disabled={isSubmitting || !isMetaSdkReady}
         className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
         {isSubmitting
@@ -202,13 +212,19 @@ export default function WhatsappEmbeddedSignup() {
       <button
         type="button"
         onClick={launchWhatsAppSignupNoCtwa}
-        disabled={isSubmitting}
+        disabled={isSubmitting || !isMetaSdkReady}
         className="mt-2 rounded bg-blue-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
         {isSubmitting
           ? "Conectando con WhatsApp..."
           : "Conectar cuenta de WhatsApp sin CTWA"}
       </button>
+
+      {!isMetaSdkReady && !submitError && (
+        <p className="text-sm text-gray-600">
+          Cargando SDK de Meta... espera unos segundos antes de continuar.
+        </p>
+      )}
 
       {submitError && (
         <p className="text-sm text-red-500">
