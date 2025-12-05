@@ -26,6 +26,20 @@ CREATE TABLE IF NOT EXISTS profiles (
   theme text NOT NULL DEFAULT 'default'
 );
 
+-- Compatibilidad para clientes (p.ej. Prisma) que buscan una tabla "Profile"
+-- en mayúscula. Creamos una vista que expone las mismas columnas para evitar
+-- errores de tabla inexistente sin duplicar datos.
+CREATE OR REPLACE VIEW "Profile" AS
+SELECT
+  id,
+  user_id,
+  title,
+  bio,
+  avatar_url,
+  slug,
+  theme
+FROM profiles;
+
 -- Si quieres que users.profile_id haga FK opcional, puedes agregar la constraint:
 ALTER TABLE IF EXISTS users
   ADD COLUMN IF NOT EXISTS profile_id uuid;
