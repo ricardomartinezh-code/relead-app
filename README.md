@@ -11,16 +11,22 @@ Copia `.env.example` a `.env` y completa los valores:
 - `NEXTAUTH_URL`
 - `NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_CTWA` (ID de configuración de onboarding con CTWA)
 - `NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_NO_CTWA` (ID de configuración de onboarding sin CTWA)
+- `DATABASE_URL` (cadena de conexión a tu base de datos Neon)
 
 ## Scripts útiles
 - `npm install`
 - `npm run dev`
 - `npm run build`
+- `npm run db:check` – prueba la conexión a Neon desde CLI e imprime tablas públicas.
 
 ## Estructura principal
 - `src/app` – rutas de App Router (landing, auth, dashboard, páginas públicas, APIs).
 - `src/lib` – helpers para autenticación y datos en memoria.
 - `src/components` – UI reutilizable (layout, formularios, listas de links).
+
+## Verificar la conexión con Neon desde la app
+- Endpoint de salud: `GET /api/db/health` devuelve estado `connected` y lista de tablas si `DATABASE_URL` es válido.
+- Script CLI: `npm run db:check` usa `test-db-connection.js` para validar la conexión y mostrar información del servidor.
 
 ## Flujos clave
 - Registro en `/auth/register` (crea usuario en memoria, hash de contraseña y perfil con slug único).
