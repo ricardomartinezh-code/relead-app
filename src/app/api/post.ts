@@ -1,9 +1,22 @@
 import { neon } from '@neondatabase/serverless';
-const sql = neon(process.env.DATABASE_URL);
+
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error('DATABASE_URL is not set');
+}
+
+const sql = neon(databaseUrl);
 
 export default async (req: Request, ctx: any) => {
   // get and validate the `postId` query parameter
-  const postId = parseInt(new URL(req.url).searchParams.get('postId'), 10);
+  const postIdParam = new URL(req.url).searchParams.get('postId');
+
+  if (!postIdParam) {
+    return new Response('Bad request', { status: 400 });
+  }
+
+  const postId = parseInt(postIdParam, 10);
   if (isNaN(postId)) return new Response('Bad request', { status: 400 });
 
   // query and validate the post

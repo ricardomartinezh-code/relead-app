@@ -6,7 +6,9 @@ import Link from "next/link";
 
 export default async function ProfilePage() {
   const session = await getSession();
-  if (!session?.user?.id) {
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+
+  if (!userId) {
     return (
       <DashboardLayout>
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -31,7 +33,7 @@ export default async function ProfilePage() {
     );
   }
 
-  const user = await getUserById(session.user.id);
+  const user = await getUserById(userId);
   if (!user?.profileId) return <p className="p-6">Crea tu perfil primero.</p>;
 
   const profile = await getProfileById(user.profileId);
