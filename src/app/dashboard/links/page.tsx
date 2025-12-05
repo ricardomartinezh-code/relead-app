@@ -1,12 +1,12 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { LinksManager } from "@/components/LinksManager";
 import { getSession } from "@/lib/auth";
-import { getUserWithProfileByEmail } from "@/lib/mockDb";
+import { getUserById } from "@/lib/db";
 import Link from "next/link";
 
 export default async function LinksPage() {
   const session = await getSession();
-  if (!session?.user?.email) {
+  if (!session?.user?.id) {
     return (
       <DashboardLayout>
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -31,8 +31,8 @@ export default async function LinksPage() {
     );
   }
 
-  const user = getUserWithProfileByEmail(session.user.email);
-  if (!user?.profile) return <p className="p-6">Crea tu perfil primero.</p>;
+  const user = await getUserById(session.user.id);
+  if (!user?.profileId) return <p className="p-6">Crea tu perfil primero.</p>;
 
   return (
     <DashboardLayout>

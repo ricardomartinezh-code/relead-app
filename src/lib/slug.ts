@@ -1,5 +1,4 @@
-import { generateUniqueSlugFromState } from "./mockDb";
-
+import { generateUniqueSlug as dbGenerateUniqueSlug } from "./db";
 export async function generateUniqueSlug(base: string) {
-  return generateUniqueSlugFromState(base);
+  return dbGenerateUniqueSlug(base);
 }

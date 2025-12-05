@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { type ProfileRecord } from "@/lib/mockDb";
+import { type ProfileRecord } from "@/lib/db";
 
 export function ProfileForm({ profile }: { profile: ProfileRecord }) {
   const [message, setMessage] = useState<string | null>(null);
@@ -20,7 +20,6 @@ export function ProfileForm({ profile }: { profile: ProfileRecord }) {
         title: form.get("title"),
         bio: form.get("bio") || null,
         avatarUrl: form.get("avatarUrl") || null,
-        slug: form.get("slug"),
         theme: form.get("theme") || "default",
       }),
       headers: { "Content-Type": "application/json" },
@@ -61,17 +60,6 @@ export function ProfileForm({ profile }: { profile: ProfileRecord }) {
           className={inputClassName}
           placeholder="https://... tu foto o logo"
         />
-      </div>
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-slate-800">Slug</label>
-        <input
-          name="slug"
-          defaultValue={profile.slug}
-          required
-          className={inputClassName}
-          placeholder="tuperfil"
-        />
-        <p className="text-xs text-slate-500">Debe ser único. Se usará en /{`{slug}`}</p>
       </div>
       <div className="space-y-1">
         <label className="text-sm font-medium text-slate-800">Tema</label>

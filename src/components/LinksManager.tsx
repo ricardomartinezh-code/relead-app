@@ -1,12 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { type LinkRecord } from "@/lib/mockDb";
+import { type LinkRecord } from "@/lib/db";
 
 export function LinksManager() {
   const [links, setLinks] = useState<LinkRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formState, setFormState] = useState({ label: "", url: "", order: 0, isActive: true });
+  const [formState, setFormState] = useState({ label: "", url: "" });
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
 
@@ -30,10 +30,11 @@ export function LinksManager() {
       body: JSON.stringify(formState),
     });
     if (!res.ok) {
-      setError("No se pudo crear el link");
+      const data = await res.json();
+      setError(data.error || "No se pudo crear el link");
       return;
     }
-    setFormState({ label: "", url: "", order: 0, isActive: true });
+    setFormState({ label: "", url: "" });
     fetchLinks();
   };
 
@@ -86,38 +87,19 @@ export function LinksManager() {
               value={formState.url}
               onChange={(e) => setFormState({ ...formState, url: e.target.value })}
               required
+              type="url"
               className={inputClassName}
               placeholder="https://..."
             />
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-3 md:items-center">
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-800">Orden</label>
-            <input
-              type="number"
-              value={formState.order}
-              onChange={(e) => setFormState({ ...formState, order: Number(e.target.value) })}
-              className={inputClassName}
-            />
-          </div>
-          <label className="flex items-center gap-2 text-sm text-slate-800">
-            <input
-              type="checkbox"
-              checked={formState.isActive}
-              onChange={(e) => setFormState({ ...formState, isActive: e.target.checked })}
-              className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-200"
-            />
-            Activo
-          </label>
-          <div className="flex md:justify-end">
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800"
-            >
-              Crear link
-            </button>
-          </div>
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800"
+          >
+            Crear link
+          </button>
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
       </form>
@@ -145,7 +127,7 @@ export function LinksManager() {
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-slate-900">{link.label}</p>
                 <p className="text-xs text-slate-600">{link.url}</p>
-                <p className="text-xs text-slate-500">Orden: {link.order} · {link.isActive ? "Activo" : "Inactivo"}</p>
+                <p className="text-xs text-slate-500">{link.isActive ? "✓ Activo" : "✗ Inactivo"}</p>
               </div>
               <div className="flex flex-wrap gap-2 text-sm">
                 <button
@@ -153,12 +135,6 @@ export function LinksManager() {
                   onClick={() => handleUpdate(link.id, { isActive: !link.isActive })}
                 >
                   {link.isActive ? "Desactivar" : "Activar"}
-                </button>
-                <button
-                  className="rounded-full border border-slate-300 px-3 py-2 text-slate-800 transition hover:border-slate-400"
-                  onClick={() => handleUpdate(link.id, { order: link.order + 1 })}
-                >
-                  + Orden
                 </button>
                 <button
                   className="rounded-full border border-slate-300 px-3 py-2 text-red-600 transition hover:border-red-300"

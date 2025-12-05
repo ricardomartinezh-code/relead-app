@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { findWhatsAppAccountByPhoneNumberId } from "@/lib/mockDb";
+import { findWhatsAppAccountByPhoneNumberId } from "@/lib/db";
 
 type RequestBody = {
   phone_number_id?: string;
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const account = findWhatsAppAccountByPhoneNumberId(phoneNumberId);
+    const account = await findWhatsAppAccountByPhoneNumberId(phoneNumberId);
 
     if (!account) {
       return NextResponse.json(

@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-
-import { createUserWithProfile } from "@/lib/mockDb";
+import { createUser, getUserByEmail, getUserByUsername } from "@/lib/db";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password } = await req.json();
+    const { name, email, password, username } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -13,21 +12,45 @@ export async function POST(req: Request) {
       );
     }
 
-    const baseSlug = (email as string).split("@")[0];
-    await createUserWithProfile({
-      name: name || baseSlug,
-      email,
-      password,
-      slugBase: baseSlug,
-    });
+    if (password.length < 6) {
+      return NextResponse.json(
+        { message: "La contraseña debe tener al menos 6 caracteres." },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json({ message: "Cuenta creada correctamente." });
+    // Verificar si el email ya existe
+    const existingUser = await getUserByEmail(email);
+    if (existingUser) {
+      return NextResponse.json(
+        { message: "Ya existe una cuenta con ese correo." },
+        { status: 400 }
+      );
+    }
+
+    // Verificar si el username ya existe (si se proporciona)
+    if (username) {
+      const existingUsername = await getUserByUsername(username);
+      if (existingUsername) {
+        return NextResponse.json(
+          { message: "El nombre de usuario ya está en uso." },
+          { status: 400 }
+        );
+      }
+    }
+
+    const newUser = await createUser(email, name || email, password, username);
+
+    return NextResponse.json({
+      message: "Cuenta creada correctamente.",
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+      },
+    });
   } catch (error) {
     console.error("Register error:", error);
-
-    if ((error as Error)?.message?.includes("El email ya está registrado")) {
-      return NextResponse.json({ message: "Ya existe una cuenta con ese correo." }, { status: 400 });
-    }
 
     const isDev = process.env.NODE_ENV === "development";
     return NextResponse.json(
