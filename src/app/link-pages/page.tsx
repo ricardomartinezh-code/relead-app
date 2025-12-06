@@ -19,6 +19,12 @@ interface ApiPageResponse {
   page: LinkPageWithContent;
 }
 
+const isProfileResponse = (
+  value: unknown
+): value is { profile?: ProfileRecord | null } => {
+  return typeof value === "object" && value !== null && "profile" in value;
+};
+
 const defaultDesign: LinkPageDesign = {
   backgroundColor: "#020617",
   buttonBg: "#f9fafb",
@@ -205,15 +211,12 @@ export default function LinkPagesScreen() {
       try {
         const res = await fetch("/api/profile");
         if (!res.ok) return;
-        const data = (await res.json()) as
-          | { profile?: ProfileRecord | null }
-          | ProfileRecord;
+        const payload = await res.json();
+        const profileData: ProfileRecord | null = isProfileResponse(payload)
+          ? payload.profile ?? null
+          : (payload as ProfileRecord | null);
 
-        if ("profile" in data) {
-          setProfile(data.profile ?? null);
-        } else {
-          setProfile(data);
-        }
+        setProfile(profileData);
       } catch (err) {
         console.error("Error cargando perfil:", err);
       }
