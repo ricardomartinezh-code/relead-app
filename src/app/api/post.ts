@@ -8,7 +8,7 @@ if (!databaseUrl) {
 
 const sql = neon(databaseUrl);
 
-export default async (req: Request, ctx: any) => {
+async function handler(req: Request) {
   // get and validate the `postId` query parameter
   const postIdParam = new URL(req.url).searchParams.get('postId');
 
@@ -28,6 +28,8 @@ export default async (req: Request, ctx: any) => {
     headers: { 'content-type': 'application/json' }
   });
 }
+
+export default handler;
 
 export const config = {
   runtime: 'edge',

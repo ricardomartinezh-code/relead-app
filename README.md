@@ -6,12 +6,12 @@ ReLead es un servicio de "link in bio" construido con Next.js 14 (App Router), T
 - Node.js 18+
 
 ## Variables de entorno
-Copia `.env.example` a `.env` y completa los valores:
-- `NEXTAUTH_SECRET`
-- `NEXTAUTH_URL`
-- `NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_CTWA` (ID de configuración de onboarding con CTWA)
-- `NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_NO_CTWA` (ID de configuración de onboarding sin CTWA)
-- `DATABASE_URL` (cadena de conexión a tu base de datos Neon)
+Copia `.env.example` a `.env` y completa:
+- `DATABASE_URL` (Neon o Postgres compatible)
+- `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
+- Cloudinary: `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+- Meta/WhatsApp (server): `META_APP_ID`, `META_APP_SECRET`, `META_REDIRECT_URI`
+- Meta/WhatsApp (client): `NEXT_PUBLIC_META_APP_ID`, `NEXT_PUBLIC_META_REDIRECT_URI`, `NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_CTWA`, `NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_NO_CTWA`
 
 ## Scripts útiles
 - `npm install`
@@ -20,6 +20,7 @@ Copia `.env.example` a `.env` y completa los valores:
 - `npm run db:check` – prueba la conexión a Neon desde CLI e imprime tablas públicas.
 - `npm run db:migrate` – aplica automáticamente `db/schema.sql` sobre la base de datos de `DATABASE_URL`.
 - `npm run prod:verify` – checklist automático que valida variables de entorno críticas, conecta a la base de datos, aplica migraciones y ejecuta el build de producción.
+- `npm run db:verify-structure` – compara la estructura actual de la base contra `db/schema.sql` y reporta diferencias.
 
 ## Estructura principal
 - `src/app` – rutas de App Router (landing, auth, dashboard, páginas públicas, APIs).

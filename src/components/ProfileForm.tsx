@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useState } from "react";
 import type { ChangeEvent } from "react";
 import { type ProfileRecord } from "@/lib/db";
@@ -126,7 +127,13 @@ export function ProfileForm({ profile }: ProfileFormProps) {
         {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
         {avatarUrl && (
           <div className="flex items-center gap-2">
-            <img src={avatarUrl} alt="Avatar" className="h-12 w-12 rounded-full object-cover" />
+            <Image
+              src={avatarUrl}
+              alt="Avatar"
+              width={48}
+              height={48}
+              className="h-12 w-12 rounded-full object-cover"
+            />
             <p className="text-xs text-slate-600 break-all">{avatarUrl}</p>
           </div>
         )}
