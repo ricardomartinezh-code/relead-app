@@ -205,9 +205,15 @@ export default function LinkPagesScreen() {
       try {
         const res = await fetch("/api/profile");
         if (!res.ok) return;
-        const data = (await res.json()) as { profile?: ProfileRecord } | ProfileRecord;
-        const profileData = "profile" in data ? data.profile || null : data;
-        setProfile(profileData);
+        const data = (await res.json()) as
+          | { profile?: ProfileRecord | null }
+          | ProfileRecord;
+
+        if ("profile" in data) {
+          setProfile(data.profile ?? null);
+        } else {
+          setProfile(data);
+        }
       } catch (err) {
         console.error("Error cargando perfil:", err);
       }
