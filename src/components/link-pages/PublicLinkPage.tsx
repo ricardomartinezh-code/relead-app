@@ -3,9 +3,9 @@ import type { LinkBlockWithItems, LinkItem, LinkPageWithContent } from "@/types/
 import type { PublicLinkPage } from "@/lib/db/linkPagePublic";
 
 interface PublicLinkPageProps {
-  page: (LinkPageWithContent | PublicLinkPage | null) & {
-    profile?: PublicLinkPage["profile"];
-  };
+  page:
+    | ((LinkPageWithContent | PublicLinkPage) & { profile?: PublicLinkPage["profile"] })
+    | null;
   variant?: "full" | "preview";
 }
 
