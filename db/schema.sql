@@ -3,6 +3,9 @@
 
 BEGIN;
 
+-- Extensión para UUID aleatorios
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 -- Tabla de usuarios
 CREATE TABLE IF NOT EXISTS users (
   id uuid PRIMARY KEY,
@@ -25,6 +28,14 @@ CREATE TABLE IF NOT EXISTS profiles (
   slug text NOT NULL UNIQUE,
   theme text NOT NULL DEFAULT 'default'
 );
+
+-- Nuevos campos para páginas tipo link-in-bio
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS username text,
+  ADD COLUMN IF NOT EXISTS bio text,
+  ADD COLUMN IF NOT EXISTS avatar_url text,
+  ADD COLUMN IF NOT EXISTS social_links jsonb DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS settings jsonb DEFAULT '{}'::jsonb;
 
 -- Compatibilidad para clientes (p.ej. Prisma) que buscan una tabla "Profile"
 -- en mayúscula. Creamos una vista que expone las mismas columnas para evitar
@@ -74,6 +85,91 @@ CREATE TABLE IF NOT EXISTS link_clicks (
   ip text NULL,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Páginas de enlaces personalizadas
+CREATE TABLE IF NOT EXISTS link_pages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+  -- nombre interno que se ve en el editor
+  internal_name text NOT NULL,
+
+  -- slug para la URL pública, único por usuario
+  slug text NOT NULL,
+
+  -- textos visibles (opcionales) en la página pública
+  public_title text,
+  public_description text,
+
+  is_default boolean NOT NULL DEFAULT false,
+  is_published boolean NOT NULL DEFAULT true,
+
+  -- configuración visual de la página (tema, header, colores, tipografía, navegación, etc.)
+  design jsonb NOT NULL DEFAULT '{}'::jsonb,
+
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+
+  CONSTRAINT link_pages_user_slug_unique UNIQUE (user_id, slug)
+);
+
+-- Bloques dentro de la página
+CREATE TABLE IF NOT EXISTS link_blocks (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  page_id uuid NOT NULL REFERENCES link_pages(id) ON DELETE CASCADE,
+
+  -- tipo de bloque: 'links', 'text', 'image', 'button', 'separator', 'social', etc.
+  block_type text NOT NULL,
+
+  title text,
+  subtitle text,
+
+  -- posición vertical dentro de la página
+  position integer NOT NULL,
+
+  is_visible boolean NOT NULL DEFAULT true,
+
+  -- configuración específica del bloque (layout, tamaño, estilos, etc.)
+  config jsonb NOT NULL DEFAULT '{}'::jsonb,
+
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_link_blocks_page_position
+  ON link_blocks(page_id, position);
+
+-- Items de contenido dentro de un bloque
+CREATE TABLE IF NOT EXISTS link_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  block_id uuid NOT NULL REFERENCES link_blocks(id) ON DELETE CASCADE,
+
+  -- orden dentro del bloque
+  position integer NOT NULL,
+
+  -- texto principal del ítem (ej. nombre del link)
+  label text NOT NULL,
+
+  -- URL asociada (para bloques tipo links, buttons, etc.)
+  url text,
+
+  -- icono o emoji opcional
+  icon text,
+
+  -- mini imagen opcional para el ítem
+  image_url text,
+
+  is_active boolean NOT NULL DEFAULT true,
+
+  -- configuración opcional por ítem (destacado, badge, comportamiento…)
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_link_items_block_position
+  ON link_items(block_id, position);
 
 -- Cuentas de WhatsApp
 CREATE TABLE IF NOT EXISTS whats_app_accounts (
