@@ -6,6 +6,7 @@ import type {
   LinkPageWithContent,
   LinkBlockWithItems,
   LinkItem,
+  LinkPageDesign,
 } from "@/types/link";
 import PublicLinkPage from "@/components/link-pages/PublicLinkPage";
 
@@ -17,14 +18,151 @@ interface ApiPageResponse {
   page: LinkPageWithContent;
 }
 
+const defaultDesign: LinkPageDesign = {
+  backgroundColor: "#020617",
+  buttonBg: "#f9fafb",
+  buttonText: "#020617",
+  textColor: "#f9fafb",
+  accentColor: "#6366f1",
+  header: {
+    template: "classic",
+    useProfileAvatar: true,
+    useProfileName: true,
+    useProfileBio: true,
+  },
+};
+
+function DesignControls({
+  design,
+  onChange,
+  onSave,
+  disabled,
+}: {
+  design: LinkPageDesign;
+  onChange: (design: LinkPageDesign) => void;
+  onSave: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-slate-900">Diseño rápido</h2>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={disabled}
+          className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+        >
+          Guardar diseño
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <label className="flex flex-col gap-1 text-xs text-slate-700">
+          Fondo página
+          <input
+            type="color"
+            value={design.backgroundColor || "#020617"}
+            onChange={(e) => onChange({ ...design, backgroundColor: e.target.value })}
+            className="h-8 w-full cursor-pointer rounded-md border border-slate-300 bg-white"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs text-slate-700">
+          Fondo botones
+          <input
+            type="color"
+            value={design.buttonBg || "#f9fafb"}
+            onChange={(e) => onChange({ ...design, buttonBg: e.target.value })}
+            className="h-8 w-full cursor-pointer rounded-md border border-slate-300 bg-white"
+          />
+        </label>
+      </div>
+
+      <label className="flex flex-col gap-1 text-xs text-slate-700">
+        Plantilla header
+        <select
+          value={design.header?.template || "classic"}
+          onChange={(e) =>
+            onChange({
+              ...design,
+              header: {
+                ...design.header,
+                template: e.target.value as "classic" | "minimal",
+              },
+            })
+          }
+          className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+        >
+          <option value="classic">Clásico</option>
+          <option value="minimal">Minimal</option>
+        </select>
+      </label>
+
+      <div className="mt-1 space-y-1 text-xs text-slate-700">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={design.header?.useProfileAvatar ?? true}
+            onChange={(e) =>
+              onChange({
+                ...design,
+                header: {
+                  ...design.header,
+                  useProfileAvatar: e.target.checked,
+                },
+              })
+            }
+          />
+          Usar avatar de perfil
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={design.header?.useProfileName ?? true}
+            onChange={(e) =>
+              onChange({
+                ...design,
+                header: {
+                  ...design.header,
+                  useProfileName: e.target.checked,
+                },
+              })
+            }
+          />
+          Usar nombre de perfil
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={design.header?.useProfileBio ?? true}
+            onChange={(e) =>
+              onChange({
+                ...design,
+                header: {
+                  ...design.header,
+                  useProfileBio: e.target.checked,
+                },
+              })
+            }
+          />
+          Usar bio de perfil
+        </label>
+      </div>
+    </div>
+  );
+}
+
 export default function LinkPagesScreen() {
   const [pages, setPages] = useState<LinkPageSummary[]>([]);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<LinkPageWithContent | null>(null);
+  const [profile, setProfile] = useState<ProfileRecord | null>(null);
   const [loadingPages, setLoadingPages] = useState(false);
   const [loadingPage, setLoadingPage] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<any | null>(null);
 
   useEffect(() => {
     const loadPages = async () => {
@@ -53,6 +191,21 @@ export default function LinkPagesScreen() {
   }, [selectedPageId]);
 
   useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/profile");
+        if (!res.ok) return;
+        const data: ProfileRecord = await res.json();
+        setProfile(data);
+      } catch (err) {
+        console.error("Error cargando perfil:", err);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  useEffect(() => {
     const loadPage = async () => {
       if (!selectedPageId) {
         setCurrentPage(null);
@@ -77,6 +230,36 @@ export default function LinkPagesScreen() {
 
     loadPage();
   }, [selectedPageId]);
+
+  useEffect(() => {
+    if (currentPage) {
+      setDesignDraft({
+        ...defaultDesign,
+        ...(currentPage.design || {}),
+        header: {
+          ...defaultDesign.header,
+          ...(currentPage.design?.header || {}),
+        },
+      });
+    } else {
+      setDesignDraft(defaultDesign);
+    }
+  }, [currentPage]);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/profile");
+        if (!res.ok) return;
+        const data = await res.json();
+        setProfile(data.profile || data);
+      } catch {
+        // ignorar errores de perfil por ahora
+      }
+    };
+
+    loadProfile();
+  }, []);
 
   const handleCreatePage = async () => {
     try {
@@ -320,6 +503,38 @@ export default function LinkPagesScreen() {
 
       <div className="grid gap-4 md:grid-cols-[2fr,1.5fr]">
         <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+          <DesignControls
+            design={designDraft}
+            disabled={!currentPage}
+            onChange={(d) => setDesignDraft(d)}
+            onSave={async () => {
+              if (!currentPage) return;
+              setError(null);
+              try {
+                const res = await fetch(`/api/link-pages/${currentPage.id}`, {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json; charset=utf-8",
+                  },
+                  body: JSON.stringify({
+                    design: designDraft,
+                  }),
+                });
+                if (!res.ok) {
+                  const data = await res.json().catch(() => ({}));
+                  throw new Error(data.error || "Error guardando diseño");
+                }
+                const data = await res.json();
+                const updated = data.page as LinkPageWithContent;
+                setCurrentPage((prev) =>
+                  prev && prev.id === updated.id ? { ...prev, design: updated.design } : prev
+                );
+              } catch (err: any) {
+                setError(err.message || "Error guardando diseño");
+              }
+            }}
+          />
+
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">
               Bloques de la página
