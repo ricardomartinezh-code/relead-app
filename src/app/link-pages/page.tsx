@@ -6,6 +6,7 @@ import type {
   LinkPageWithContent,
   LinkBlockWithItems,
   LinkItem,
+  LinkPageDesign,
 } from "@/types/link";
 
 interface ApiListPagesResponse {
@@ -16,14 +17,151 @@ interface ApiPageResponse {
   page: LinkPageWithContent;
 }
 
+const defaultDesign: LinkPageDesign = {
+  backgroundColor: "#020617",
+  buttonBg: "#f9fafb",
+  buttonText: "#020617",
+  textColor: "#f9fafb",
+  accentColor: "#6366f1",
+  header: {
+    template: "classic",
+    useProfileAvatar: true,
+    useProfileName: true,
+    useProfileBio: true,
+  },
+};
+
+function DesignControls({
+  design,
+  onChange,
+  onSave,
+  disabled,
+}: {
+  design: LinkPageDesign;
+  onChange: (design: LinkPageDesign) => void;
+  onSave: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-slate-900">Diseño rápido</h2>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={disabled}
+          className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+        >
+          Guardar diseño
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <label className="flex flex-col gap-1 text-xs text-slate-700">
+          Fondo página
+          <input
+            type="color"
+            value={design.backgroundColor || "#020617"}
+            onChange={(e) => onChange({ ...design, backgroundColor: e.target.value })}
+            className="h-8 w-full cursor-pointer rounded-md border border-slate-300 bg-white"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs text-slate-700">
+          Fondo botones
+          <input
+            type="color"
+            value={design.buttonBg || "#f9fafb"}
+            onChange={(e) => onChange({ ...design, buttonBg: e.target.value })}
+            className="h-8 w-full cursor-pointer rounded-md border border-slate-300 bg-white"
+          />
+        </label>
+      </div>
+
+      <label className="flex flex-col gap-1 text-xs text-slate-700">
+        Plantilla header
+        <select
+          value={design.header?.template || "classic"}
+          onChange={(e) =>
+            onChange({
+              ...design,
+              header: {
+                ...design.header,
+                template: e.target.value as "classic" | "minimal",
+              },
+            })
+          }
+          className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+        >
+          <option value="classic">Clásico</option>
+          <option value="minimal">Minimal</option>
+        </select>
+      </label>
+
+      <div className="mt-1 space-y-1 text-xs text-slate-700">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={design.header?.useProfileAvatar ?? true}
+            onChange={(e) =>
+              onChange({
+                ...design,
+                header: {
+                  ...design.header,
+                  useProfileAvatar: e.target.checked,
+                },
+              })
+            }
+          />
+          Usar avatar de perfil
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={design.header?.useProfileName ?? true}
+            onChange={(e) =>
+              onChange({
+                ...design,
+                header: {
+                  ...design.header,
+                  useProfileName: e.target.checked,
+                },
+              })
+            }
+          />
+          Usar nombre de perfil
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={design.header?.useProfileBio ?? true}
+            onChange={(e) =>
+              onChange({
+                ...design,
+                header: {
+                  ...design.header,
+                  useProfileBio: e.target.checked,
+                },
+              })
+            }
+          />
+          Usar bio de perfil
+        </label>
+      </div>
+    </div>
+  );
+}
+
 export default function LinkPagesScreen() {
   const [pages, setPages] = useState<LinkPageSummary[]>([]);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<LinkPageWithContent | null>(null);
+  const [designDraft, setDesignDraft] = useState<LinkPageDesign>(defaultDesign);
   const [loadingPages, setLoadingPages] = useState(false);
   const [loadingPage, setLoadingPage] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<any | null>(null);
 
   useEffect(() => {
     const loadPages = async () => {
@@ -75,6 +213,36 @@ export default function LinkPagesScreen() {
 
     loadPage();
   }, [selectedPageId]);
+
+  useEffect(() => {
+    if (currentPage) {
+      setDesignDraft({
+        ...defaultDesign,
+        ...(currentPage.design || {}),
+        header: {
+          ...defaultDesign.header,
+          ...(currentPage.design?.header || {}),
+        },
+      });
+    } else {
+      setDesignDraft(defaultDesign);
+    }
+  }, [currentPage]);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/profile");
+        if (!res.ok) return;
+        const data = await res.json();
+        setProfile(data.profile || data);
+      } catch {
+        // ignorar errores de perfil por ahora
+      }
+    };
+
+    loadProfile();
+  }, []);
 
   const handleCreatePage = async () => {
     try {
@@ -218,6 +386,8 @@ export default function LinkPagesScreen() {
     }
   };
 
+  const pageForPreview = currentPage ? { ...currentPage, design: designDraft } : null;
+
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
       <header className="flex items-center justify-between gap-2">
@@ -270,6 +440,38 @@ export default function LinkPagesScreen() {
 
       <div className="grid gap-4 md:grid-cols-[2fr,1.5fr]">
         <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+          <DesignControls
+            design={designDraft}
+            disabled={!currentPage}
+            onChange={(d) => setDesignDraft(d)}
+            onSave={async () => {
+              if (!currentPage) return;
+              setError(null);
+              try {
+                const res = await fetch(`/api/link-pages/${currentPage.id}`, {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json; charset=utf-8",
+                  },
+                  body: JSON.stringify({
+                    design: designDraft,
+                  }),
+                });
+                if (!res.ok) {
+                  const data = await res.json().catch(() => ({}));
+                  throw new Error(data.error || "Error guardando diseño");
+                }
+                const data = await res.json();
+                const updated = data.page as LinkPageWithContent;
+                setCurrentPage((prev) =>
+                  prev && prev.id === updated.id ? { ...prev, design: updated.design } : prev
+                );
+              } catch (err: any) {
+                setError(err.message || "Error guardando diseño");
+              }
+            }}
+          />
+
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">
               Bloques de la página
@@ -356,7 +558,7 @@ export default function LinkPagesScreen() {
         <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-950 p-3 text-slate-50 shadow-sm">
           <h2 className="text-sm font-semibold">Vista previa</h2>
           <div className="flex justify-center">
-            <PublicPagePreview page={currentPage} />
+            <PublicPagePreview page={pageForPreview} profile={profile} />
           </div>
         </div>
       </div>
@@ -364,7 +566,13 @@ export default function LinkPagesScreen() {
   );
 }
 
-function PublicPagePreview({ page }: { page: LinkPageWithContent | null }) {
+function PublicPagePreview({
+  page,
+  profile,
+}: {
+  page: LinkPageWithContent | null;
+  profile?: any;
+}) {
   if (!page) {
     return (
       <div className="flex h-80 w-44 items-center justify-center rounded-[2rem] border border-slate-700 bg-slate-900 text-xs text-slate-500">
@@ -373,18 +581,43 @@ function PublicPagePreview({ page }: { page: LinkPageWithContent | null }) {
     );
   }
 
-  const title = page.publicTitle || page.internalName;
-  const description = page.publicDescription || "";
+  const d = {
+    backgroundColor: page.design?.backgroundColor || defaultDesign.backgroundColor || "#020617",
+    buttonBg: page.design?.buttonBg || defaultDesign.buttonBg || "#f9fafb",
+    buttonText: page.design?.buttonText || defaultDesign.buttonText || "#020617",
+    textColor: page.design?.textColor || defaultDesign.textColor || "#f9fafb",
+    header: {
+      template: page.design?.header?.template || defaultDesign.header?.template || "classic",
+      useProfileAvatar: page.design?.header?.useProfileAvatar ?? true,
+      useProfileName: page.design?.header?.useProfileName ?? true,
+      useProfileBio: page.design?.header?.useProfileBio ?? true,
+    },
+  };
+
+  const profileName = profile?.title || profile?.name;
+  const title = d.header.useProfileName && profileName ? profileName : page.publicTitle || page.internalName;
+  const bio =
+    d.header.useProfileBio && profile?.bio ? profile.bio : page.publicDescription || "";
+  const avatarUrl = d.header.useProfileAvatar ? profile?.avatarUrl : null;
 
   return (
-    <div className="flex h-96 w-52 flex-col rounded-[2.2rem] border border-slate-700 bg-gradient-to-b from-slate-900 to-slate-950 px-3 py-4">
+    <div
+      className="flex h-96 w-52 flex-col rounded-[2.2rem] border border-slate-700 px-3 py-4"
+      style={{ backgroundColor: d.backgroundColor }}
+    >
       <div className="flex flex-col items-center gap-2 border-b border-slate-800 pb-3">
-        <div className="h-12 w-12 rounded-full bg-slate-700" />
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="avatar" className="h-12 w-12 rounded-full object-cover" />
+        ) : (
+          <div className="h-12 w-12 rounded-full bg-slate-700" />
+        )}
         <div className="text-center">
-          <p className="text-xs font-semibold text-slate-50">{title}</p>
-          {description && (
-            <p className="mt-1 line-clamp-2 text-[10px] text-slate-400">
-              {description}
+          <p className="text-xs font-semibold" style={{ color: d.textColor }}>
+            {title}
+          </p>
+          {bio && (
+            <p className="mt-1 line-clamp-2 text-[10px]" style={{ color: d.textColor, opacity: 0.7 }}>
+              {bio}
             </p>
           )}
         </div>
@@ -398,14 +631,18 @@ function PublicPagePreview({ page }: { page: LinkPageWithContent | null }) {
             return (
               <div key={block.id} className="space-y-1">
                 {block.title && (
-                  <p className="text-[10px] font-semibold text-slate-300">
+                  <p className="text-[10px]" style={{ color: d.textColor, opacity: 0.8 }}>
                     {block.title}
                   </p>
                 )}
                 {block.items.map((item) => (
                   <button
                     key={item.id}
-                    className="flex w-full items-center justify-center rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-900"
+                    className="flex w-full items-center justify-center rounded-lg px-2 py-1 text-[10px] font-medium"
+                    style={{
+                      backgroundColor: d.buttonBg,
+                      color: d.buttonText,
+                    }}
                   >
                     {item.label}
                   </button>
