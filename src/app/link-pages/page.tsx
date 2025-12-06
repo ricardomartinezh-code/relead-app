@@ -8,6 +8,7 @@ import type {
   LinkItem,
   LinkPageDesign,
 } from "@/types/link";
+import { type ProfileRecord } from "@/lib/db";
 import PublicLinkPage from "@/components/link-pages/PublicLinkPage";
 
 interface ApiListPagesResponse {
@@ -162,7 +163,6 @@ export default function LinkPagesScreen() {
   const [loadingPage, setLoadingPage] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
 
   useEffect(() => {
     const loadPages = async () => {
@@ -195,8 +195,9 @@ export default function LinkPagesScreen() {
       try {
         const res = await fetch("/api/profile");
         if (!res.ok) return;
-        const data: ProfileRecord = await res.json();
-        setProfile(data);
+        const data = await res.json();
+        const profileData = (data as { profile?: ProfileRecord }).profile || (data as ProfileRecord);
+        setProfile(profileData);
       } catch (err) {
         console.error("Error cargando perfil:", err);
       }
@@ -245,21 +246,6 @@ export default function LinkPagesScreen() {
       setDesignDraft(defaultDesign);
     }
   }, [currentPage]);
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const res = await fetch("/api/profile");
-        if (!res.ok) return;
-        const data = await res.json();
-        setProfile(data.profile || data);
-      } catch {
-        // ignorar errores de perfil por ahora
-      }
-    };
-
-    loadProfile();
-  }, []);
 
   const handleCreatePage = async () => {
     try {
