@@ -169,7 +169,7 @@ export default function LinkPagesScreen() {
   const [loadingPage, setLoadingPage] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [designDraft, setDesignDraft] = useState<LinkPageDesign>(defaultDesign);
+  const [, setProfile] = useState<ProfileRecord | null>(null);
   const [pageForm, setPageForm] = useState({ internalName: "", slug: "" });
   const [pageSlugEdited, setPageSlugEdited] = useState(false);
   const [pageFormError, setPageFormError] = useState<string | null>(null);
