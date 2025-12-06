@@ -1,6 +1,7 @@
 import { Pool, PoolClient } from "pg";
 import { compare, hashSync } from "bcrypt";
 import { randomUUID } from "crypto";
+import { ensureDatabaseSchema } from "./db/migrate";
 
 // Tipos de datos
 export type UserRecord = {
@@ -64,6 +65,8 @@ export type WhatsAppAccountRecord = {
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
+
+void ensureDatabaseSchema();
 
 pool.on("error", (err) => {
   console.error("Error inesperado en el pool de PostgreSQL:", err);
