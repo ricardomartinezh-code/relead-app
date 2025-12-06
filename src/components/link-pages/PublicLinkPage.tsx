@@ -1,3 +1,5 @@
+ "use client";
+
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
 import type {
