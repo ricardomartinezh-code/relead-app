@@ -9,7 +9,8 @@
     "lint": "next lint",
     "db:check": "node test-db-connection.js",
     "db:migrate": "node scripts/run-migrations.js",
-    "prod:verify": "node scripts/validate-production.js"
+    "prod:verify": "node scripts/validate-production.js",
+    "db:verify-structure": "node scripts/verify-db-structure.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
@@ -29,6 +30,7 @@
     "@types/react": "18.3.4",
     "@types/react-dom": "18.3.0",
     "autoprefixer": "10.4.19",
+    "dotenv": "^17.2.3",
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.3",
     "postcss": "8.4.39",
