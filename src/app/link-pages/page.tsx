@@ -7,6 +7,7 @@ import type {
   LinkBlockWithItems,
   LinkItem,
 } from "@/types/link";
+import PublicLinkPage from "@/components/link-pages/PublicLinkPage";
 
 interface ApiListPagesResponse {
   pages: LinkPageSummary[];
@@ -38,7 +39,8 @@ export default function LinkPagesScreen() {
         const data: ApiListPagesResponse = await res.json();
         setPages(data.pages || []);
         if (!selectedPageId && data.pages.length > 0) {
-          setSelectedPageId(data.pages[0].id);
+          const defaultPage = data.pages.find((p) => p.isDefault) || data.pages[0];
+          setSelectedPageId(defaultPage.id);
         }
       } catch (err: any) {
         setError(err.message || "Error cargando páginas");
@@ -114,7 +116,11 @@ export default function LinkPagesScreen() {
 
       const data = await res.json();
       const newPage: LinkPageSummary = data.page;
-      setPages((prev) => [...prev, newPage]);
+      setPages((prev) =>
+        newPage.isDefault
+          ? [...prev.map((p) => ({ ...p, isDefault: false })), newPage]
+          : [...prev, newPage]
+      );
       setSelectedPageId(newPage.id);
     } catch (err: any) {
       setError(err.message || "Error creando página");
@@ -218,6 +224,37 @@ export default function LinkPagesScreen() {
     }
   };
 
+  const handleSetDefault = async (pageId: string) => {
+    try {
+      setError(null);
+      const res = await fetch(`/api/link-pages/${pageId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        body: JSON.stringify({ isDefault: true }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "No se pudo actualizar la página por defecto");
+      }
+
+      const data: ApiPageResponse = await res.json();
+      const updatedPage = data.page;
+      setPages((prev) =>
+        prev.map((p) => ({ ...p, isDefault: p.id === updatedPage.id }))
+      );
+      setCurrentPage((prev) =>
+        prev && prev.id === updatedPage.id
+          ? { ...prev, isDefault: true }
+          : prev
+      );
+    } catch (err: any) {
+      setError(err.message || "Error al marcar página por defecto");
+    }
+  };
+
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
       <header className="flex items-center justify-between gap-2">
@@ -253,17 +290,30 @@ export default function LinkPagesScreen() {
           </span>
         ) : (
           pages.map((page) => (
-            <button
-              key={page.id}
-              onClick={() => setSelectedPageId(page.id)}
-              className={`rounded-full border px-3 py-1 text-sm ${
-                page.id === selectedPageId
-                  ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              {page.internalName}
-            </button>
+            <div key={page.id} className="flex items-center gap-1">
+              <button
+                onClick={() => setSelectedPageId(page.id)}
+                className={`flex items-center gap-1 rounded-full border px-3 py-1 text-sm ${
+                  page.id === selectedPageId
+                    ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {page.internalName}
+                {page.isDefault && (
+                  <span className="text-[11px] font-semibold text-amber-600">★</span>
+                )}
+              </button>
+              {!page.isDefault && (
+                <button
+                  onClick={() => handleSetDefault(page.id)}
+                  className="rounded-full px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-100"
+                  title="Marcar como página por defecto"
+                >
+                  Def.
+                </button>
+              )}
+            </div>
           ))
         )}
       </div>
@@ -356,80 +406,9 @@ export default function LinkPagesScreen() {
         <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-950 p-3 text-slate-50 shadow-sm">
           <h2 className="text-sm font-semibold">Vista previa</h2>
           <div className="flex justify-center">
-            <PublicPagePreview page={currentPage} />
+            <PublicLinkPage page={currentPage} variant="preview" />
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function PublicPagePreview({ page }: { page: LinkPageWithContent | null }) {
-  if (!page) {
-    return (
-      <div className="flex h-80 w-44 items-center justify-center rounded-[2rem] border border-slate-700 bg-slate-900 text-xs text-slate-500">
-        Sin página seleccionada
-      </div>
-    );
-  }
-
-  const title = page.publicTitle || page.internalName;
-  const description = page.publicDescription || "";
-
-  return (
-    <div className="flex h-96 w-52 flex-col rounded-[2.2rem] border border-slate-700 bg-gradient-to-b from-slate-900 to-slate-950 px-3 py-4">
-      <div className="flex flex-col items-center gap-2 border-b border-slate-800 pb-3">
-        <div className="h-12 w-12 rounded-full bg-slate-700" />
-        <div className="text-center">
-          <p className="text-xs font-semibold text-slate-50">{title}</p>
-          {description && (
-            <p className="mt-1 line-clamp-2 text-[10px] text-slate-400">
-              {description}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-3 flex-1 space-y-2 overflow-y-auto pb-2">
-        {page.blocks.map((block) => {
-          if (!block.isVisible) return null;
-
-          if (block.blockType === "links") {
-            return (
-              <div key={block.id} className="space-y-1">
-                {block.title && (
-                  <p className="text-[10px] font-semibold text-slate-300">
-                    {block.title}
-                  </p>
-                )}
-                {block.items.map((item) => (
-                  <button
-                    key={item.id}
-                    className="flex w-full items-center justify-center rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-900"
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            );
-          }
-
-          return (
-            <div
-              key={block.id}
-              className="rounded-lg border border-slate-800 bg-slate-900 px-2 py-2"
-            >
-              <p className="text-[10px] font-semibold text-slate-300">
-                {block.title || `Bloque ${block.blockType}`}
-              </p>
-              {block.subtitle && (
-                <p className="mt-1 text-[10px] text-slate-500">
-                  {block.subtitle}
-                </p>
-              )}
-            </div>
-          );
-        })}
       </div>
     </div>
   );
