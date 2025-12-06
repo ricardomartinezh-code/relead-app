@@ -19,6 +19,7 @@ Copia `.env.example` a `.env` y completa los valores:
 - `npm run build`
 - `npm run db:check` – prueba la conexión a Neon desde CLI e imprime tablas públicas.
 - `npm run db:migrate` – aplica automáticamente `db/schema.sql` sobre la base de datos de `DATABASE_URL`.
+- `npm run prod:verify` – checklist automático que valida variables de entorno críticas, conecta a la base de datos, aplica migraciones y ejecuta el build de producción.
 
 ## Estructura principal
 - `src/app` – rutas de App Router (landing, auth, dashboard, páginas públicas, APIs).
@@ -28,6 +29,7 @@ Copia `.env.example` a `.env` y completa los valores:
 ## Verificar la conexión con Neon desde la app
 - Endpoint de salud: `GET /api/db/health` devuelve estado `connected` y lista de tablas si `DATABASE_URL` es válido.
 - Script CLI: `npm run db:check` usa `test-db-connection.js` para validar la conexión y mostrar información del servidor.
+- Checklist de despliegue: `npm run prod:verify` garantiza que el entorno tenga variables críticas, DB accesible, migraciones aplicadas y que el build se genere sin errores antes de subir a producción.
 
 > Nota: la aplicación intenta aplicar `db/schema.sql` automáticamente al iniciar el servidor (y al cargar los módulos de base de datos) usando un proceso idempotente. Esto facilita el desarrollo temprano evitando tener que crear las tablas manualmente.
 

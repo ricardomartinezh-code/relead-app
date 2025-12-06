@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "db:check": "node test-db-connection.js",
-    "db:migrate": "node scripts/run-migrations.js"
+    "db:migrate": "node scripts/run-migrations.js",
+    "prod:verify": "node scripts/validate-production.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
