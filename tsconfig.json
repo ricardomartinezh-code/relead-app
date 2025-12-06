@@ -30,6 +30,9 @@
       ],
       "@/app/*": [
         "src/app/*"
+      ],
+      "@/types/*": [
+        "src/types/*"
       ]
     },
     "types": [
