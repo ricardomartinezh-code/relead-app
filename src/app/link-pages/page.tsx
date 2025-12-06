@@ -26,7 +26,16 @@ const isProfileResponse = (
 };
 
 const defaultDesign: LinkPageDesign = {
-  backgroundColor: "#020617",
+  background: {
+    type: "solid",
+    solidColor: "#020617",
+    gradientFrom: "#020617",
+    gradientTo: "#0f172a",
+    gradientAngle: 180,
+    imageOpacity: 0.25,
+    overlayColor: "#020617",
+    overlayOpacity: 0.6,
+  },
   buttonBg: "#f9fafb",
   buttonText: "#020617",
   textColor: "#f9fafb",
@@ -36,6 +45,47 @@ const defaultDesign: LinkPageDesign = {
     useProfileAvatar: true,
     useProfileName: true,
     useProfileBio: true,
+  },
+  typography: {
+    headingSize: "md",
+    bodySize: "sm",
+    fontFamily: "system",
+  },
+};
+
+const defaultBlockConfigs: Record<string, any> = {
+  links: {
+    layout: "classic",
+  },
+  text: {
+    content: "",
+    align: "center",
+    size: "md",
+    tone: "default",
+    style: {
+      variant: "default",
+      corner: "md",
+      emphasis: "normal",
+    },
+  },
+  image: {
+    imageUrl: "",
+    alt: "",
+    shape: "rounded",
+    aspect: "auto",
+    style: {
+      variant: "default",
+      corner: "xl",
+      emphasis: "normal",
+    },
+  },
+  social: {
+    source: "profile",
+    style: "icons",
+  },
+  separator: {
+    variant: "line",
+    label: null,
   },
 };
 
@@ -50,6 +100,23 @@ function DesignControls({
   onSave: () => void;
   disabled?: boolean;
 }) {
+  const background = design.background || {};
+  const typography = design.typography || {};
+
+  const updateBackground = (partial: Partial<NonNullable<LinkPageDesign["background"]>>) =>
+    onChange({
+      ...design,
+      background: { ...background, ...partial },
+    });
+
+  const updateTypography = (
+    partial: Partial<NonNullable<LinkPageDesign["typography"]>>
+  ) =>
+    onChange({
+      ...design,
+      typography: { ...typography, ...partial },
+    });
+
   return (
     <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
       <div className="flex items-center justify-between">
@@ -64,23 +131,131 @@ function DesignControls({
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-2 rounded-md border border-slate-200 bg-white p-2">
+        <p className="text-xs font-semibold text-slate-800">Fondo</p>
         <label className="flex flex-col gap-1 text-xs text-slate-700">
-          Fondo página
-          <input
-            type="color"
-            value={design.backgroundColor || "#020617"}
-            onChange={(e) => onChange({ ...design, backgroundColor: e.target.value })}
-            className="h-8 w-full cursor-pointer rounded-md border border-slate-300 bg-white"
-          />
+          Tipo de fondo
+          <select
+            value={background.type || "solid"}
+            onChange={(e) => updateBackground({ type: e.target.value as any })}
+            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+          >
+            <option value="solid">Sólido</option>
+            <option value="gradient">Degradado</option>
+            <option value="image">Imagen</option>
+          </select>
         </label>
 
+        {(!background.type || background.type === "solid") && (
+          <label className="flex flex-col gap-1 text-xs text-slate-700">
+            Color sólido
+            <input
+              type="color"
+              value={background.solidColor || "#020617"}
+              onChange={(e) => updateBackground({ solidColor: e.target.value })}
+              className="h-8 w-full cursor-pointer rounded-md border border-slate-300 bg-white"
+            />
+          </label>
+        )}
+
+        {background.type === "gradient" && (
+          <div className="grid grid-cols-3 gap-2 text-xs text-slate-700">
+            <label className="flex flex-col gap-1">
+              Desde
+              <input
+                type="color"
+                value={background.gradientFrom || "#020617"}
+                onChange={(e) => updateBackground({ gradientFrom: e.target.value })}
+                className="h-8 w-full cursor-pointer rounded-md border border-slate-300 bg-white"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              Hasta
+              <input
+                type="color"
+                value={background.gradientTo || "#0f172a"}
+                onChange={(e) => updateBackground({ gradientTo: e.target.value })}
+                className="h-8 w-full cursor-pointer rounded-md border border-slate-300 bg-white"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              Ángulo
+              <input
+                type="number"
+                value={background.gradientAngle ?? 180}
+                onChange={(e) => updateBackground({ gradientAngle: Number(e.target.value) })}
+                className="rounded-md border border-slate-300 px-2 py-1"
+              />
+            </label>
+          </div>
+        )}
+
+        {background.type === "image" && (
+          <div className="space-y-2 text-xs text-slate-700">
+            <label className="flex flex-col gap-1">
+              URL de la imagen
+              <input
+                type="text"
+                value={background.imageUrl || ""}
+                onChange={(e) => updateBackground({ imageUrl: e.target.value })}
+                className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+                placeholder="https://..."
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              Opacidad imagen (0-1)
+              <input
+                type="number"
+                step="0.05"
+                min="0"
+                max="1"
+                value={background.imageOpacity ?? 0.25}
+                onChange={(e) => updateBackground({ imageOpacity: Number(e.target.value) })}
+                className="rounded-md border border-slate-300 px-2 py-1"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              Color overlay
+              <input
+                type="color"
+                value={background.overlayColor || "#020617"}
+                onChange={(e) => updateBackground({ overlayColor: e.target.value })}
+                className="h-8 w-full cursor-pointer rounded-md border border-slate-300 bg-white"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              Opacidad overlay (0-1)
+              <input
+                type="number"
+                step="0.05"
+                min="0"
+                max="1"
+                value={background.overlayOpacity ?? 0.6}
+                onChange={(e) => updateBackground({ overlayOpacity: Number(e.target.value) })}
+                className="rounded-md border border-slate-300 px-2 py-1"
+              />
+            </label>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1 text-xs text-slate-700">
           Fondo botones
           <input
             type="color"
             value={design.buttonBg || "#f9fafb"}
             onChange={(e) => onChange({ ...design, buttonBg: e.target.value })}
+            className="h-8 w-full cursor-pointer rounded-md border border-slate-300 bg-white"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs text-slate-700">
+          Texto botones
+          <input
+            type="color"
+            value={design.buttonText || "#020617"}
+            onChange={(e) => onChange({ ...design, buttonText: e.target.value })}
             className="h-8 w-full cursor-pointer rounded-md border border-slate-300 bg-white"
           />
         </label>
@@ -156,6 +331,47 @@ function DesignControls({
           Usar bio de perfil
         </label>
       </div>
+
+      <div className="space-y-2 rounded-md border border-slate-200 bg-white p-2">
+        <p className="text-xs font-semibold text-slate-800">Tipografía</p>
+        <label className="flex flex-col gap-1 text-xs text-slate-700">
+          Tamaño títulos
+          <select
+            value={typography.headingSize || "md"}
+            onChange={(e) => updateTypography({ headingSize: e.target.value as any })}
+            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+          >
+            <option value="sm">Pequeño</option>
+            <option value="md">Medio</option>
+            <option value="lg">Grande</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-slate-700">
+          Tamaño cuerpo
+          <select
+            value={typography.bodySize || "sm"}
+            onChange={(e) => updateTypography({ bodySize: e.target.value as any })}
+            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+          >
+            <option value="sm">Pequeño</option>
+            <option value="md">Medio</option>
+            <option value="lg">Grande</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-slate-700">
+          Familia tipográfica
+          <select
+            value={typography.fontFamily || "system"}
+            onChange={(e) => updateTypography({ fontFamily: e.target.value as any })}
+            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+          >
+            <option value="system">Sistema</option>
+            <option value="sans">Sans</option>
+            <option value="serif">Serif</option>
+            <option value="mono">Mono</option>
+          </select>
+        </label>
+      </div>
     </div>
   );
 }
@@ -169,7 +385,6 @@ export default function LinkPagesScreen() {
   const [loadingPage, setLoadingPage] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [, setProfile] = useState<ProfileRecord | null>(null);
   const [pageForm, setPageForm] = useState({ internalName: "", slug: "" });
   const [pageSlugEdited, setPageSlugEdited] = useState(false);
   const [pageFormError, setPageFormError] = useState<string | null>(null);
@@ -179,6 +394,7 @@ export default function LinkPagesScreen() {
     Record<string, { label: string; url: string }>
   >({});
   const [linkCreating, setLinkCreating] = useState<Record<string, boolean>>({});
+  const [profile, setProfile] = useState<ProfileRecord | null>(null);
 
   useEffect(() => {
     const loadPages = async () => {
@@ -259,6 +475,14 @@ export default function LinkPagesScreen() {
         header: {
           ...defaultDesign.header,
           ...(currentPage.design?.header || {}),
+        },
+        background: {
+          ...defaultDesign.background,
+          ...(currentPage.design?.background || {}),
+        },
+        typography: {
+          ...defaultDesign.typography,
+          ...(currentPage.design?.typography || {}),
         },
       });
     } else {
@@ -348,11 +572,7 @@ export default function LinkPagesScreen() {
           title,
           subtitle: null,
           position,
-          config: {
-            layout: "classic",
-            size: "L",
-            collapsedByDefault: false,
-          },
+          config: defaultBlockConfigs[blockForm.blockType] || {},
         }),
       });
 
@@ -380,6 +600,37 @@ export default function LinkPagesScreen() {
       setError(err.message || "Error creando bloque");
     } finally {
       setBlockCreating(false);
+    }
+  };
+
+  const updateBlockConfigLocal = (
+    blockId: string,
+    updater: (config: any) => any
+  ) => {
+    setCurrentPage((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        blocks: prev.blocks.map((block) =>
+          block.id === blockId
+            ? { ...block, config: updater(block.config || {}) }
+            : block
+        ),
+      };
+    });
+  };
+
+  const handleSaveBlockConfig = async (blockId: string, config: any) => {
+    try {
+      await fetch(`/api/link-blocks/${blockId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        body: JSON.stringify({ config }),
+      });
+    } catch (err: any) {
+      setError(err.message || "Error guardando bloque");
     }
   };
 
@@ -577,7 +828,9 @@ export default function LinkPagesScreen() {
     }
   };
 
-  const pageForPreview = currentPage ? { ...currentPage, design: designDraft } : null;
+  const pageForPreview = currentPage
+    ? { ...currentPage, design: designDraft, profile }
+    : null;
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
@@ -751,6 +1004,10 @@ export default function LinkPagesScreen() {
                     className="w-32 rounded-md border border-slate-300 px-2 py-1 text-sm"
                   >
                     <option value="links">Links</option>
+                    <option value="text">Texto</option>
+                    <option value="image">Imagen</option>
+                    <option value="social">Redes sociales</option>
+                    <option value="separator">Separador</option>
                   </select>
                 </label>
                 <button
@@ -782,144 +1039,384 @@ export default function LinkPagesScreen() {
                 </p>
               )}
 
-              {currentPage.blocks.map((block, blockIndex) => (
-                <div
-                  key={block.id}
-                  className="rounded-lg border border-slate-200 bg-slate-50 p-3"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        {block.blockType}
-                      </p>
-                      <p className="text-sm font-medium text-slate-900">
-                        {block.title || "Bloque sin título"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex flex-col gap-1 text-[10px] text-slate-500">
-                        <button
-                          type="button"
-                          onClick={() => handleMoveBlock(block.id, "up")}
-                          disabled={blockIndex === 0}
-                          className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold hover:bg-slate-50 disabled:opacity-40"
-                          title="Mover arriba"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleMoveBlock(block.id, "down")}
-                          disabled={blockIndex === currentPage.blocks.length - 1}
-                          className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold hover:bg-slate-50 disabled:opacity-40"
-                          title="Mover abajo"
-                        >
-                          ↓
-                        </button>
+              {currentPage.blocks.map((block, blockIndex) => {
+                const blockConfig = block.config || {};
+
+                return (
+                  <div
+                    key={block.id}
+                    className="rounded-lg border border-slate-200 bg-slate-50 p-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          {block.blockType}
+                        </p>
+                        <p className="text-sm font-medium text-slate-900">
+                          {block.title || "Bloque sin título"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-1 text-[10px] text-slate-500">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveBlock(block.id, "up")}
+                            disabled={blockIndex === 0}
+                            className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold hover:bg-slate-50 disabled:opacity-40"
+                            title="Mover arriba"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveBlock(block.id, "down")}
+                            disabled={blockIndex === currentPage.blocks.length - 1}
+                            className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold hover:bg-slate-50 disabled:opacity-40"
+                            title="Mover abajo"
+                          >
+                            ↓
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {block.blockType === "links" && (
-                    <ul className="mt-2 space-y-1">
-                      {block.items.length === 0 && (
-                        <li className="text-xs text-slate-500">
-                          Sin links aún.
-                        </li>
-                      )}
-                      {block.items.map((item, itemIndex) => (
-                        <li
-                          key={item.id}
-                          className="flex items-center justify-between gap-2 rounded-md bg-white px-2 py-1 text-xs text-slate-800"
-                        >
-                          <div className="flex flex-col">
-                            <span>{item.label}</span>
-                            {item.url && (
-                              <span className="truncate text-[11px] text-slate-400">
-                                {item.url}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleMoveItem(block, item.id, "up")}
-                              disabled={itemIndex === 0}
-                              className="rounded border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] font-semibold hover:bg-slate-100 disabled:opacity-40"
-                              title="Mover arriba"
-                            >
-                              ↑
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleMoveItem(block, item.id, "down")}
-                              disabled={itemIndex === block.items.length - 1}
-                              className="rounded border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] font-semibold hover:bg-slate-100 disabled:opacity-40"
-                              title="Mover abajo"
-                            >
-                              ↓
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                    {block.blockType === "links" && (
+                      <ul className="mt-2 space-y-1">
+                        {block.items.length === 0 && (
+                          <li className="text-xs text-slate-500">
+                            Sin links aún.
+                          </li>
+                        )}
+                        {block.items.map((item, itemIndex) => (
+                          <li
+                            key={item.id}
+                            className="flex items-center justify-between gap-2 rounded-md bg-white px-2 py-1 text-xs text-slate-800"
+                          >
+                            <div className="flex flex-col">
+                              <span>{item.label}</span>
+                              {item.url && (
+                                <span className="truncate text-[11px] text-slate-400">
+                                  {item.url}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleMoveItem(block, item.id, "up")}
+                                disabled={itemIndex === 0}
+                                className="rounded border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] font-semibold hover:bg-slate-100 disabled:opacity-40"
+                                title="Mover arriba"
+                              >
+                                ↑
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveItem(block, item.id, "down")}
+                                disabled={itemIndex === block.items.length - 1}
+                                className="rounded border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] font-semibold hover:bg-slate-100 disabled:opacity-40"
+                                title="Mover abajo"
+                              >
+                                ↓
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
 
-                  {block.blockType === "links" && (
-                    <form
-                      className="mt-3 flex flex-wrap items-end gap-2"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        void handleAddLinkToBlock(block);
-                      }}
-                    >
-                      <label className="flex flex-col gap-1 text-xs text-slate-700">
-                        Texto
-                        <input
-                          type="text"
-                          value={linkDrafts[block.id]?.label || ""}
-                          onChange={(e) =>
-                            setLinkDrafts((prev) => ({
-                              ...prev,
-                              [block.id]: {
+                    {block.blockType === "text" && (
+                      <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                        <label className="flex flex-col gap-1">
+                          Contenido
+                          <textarea
+                            value={blockConfig.content || ""}
+                            onChange={(e) =>
+                              updateBlockConfigLocal(block.id, (config) => ({
+                                ...config,
+                                content: e.target.value,
+                              }))
+                            }
+                            className="min-h-[80px] rounded-md border border-slate-300 px-2 py-1 text-sm"
+                          />
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <label className="flex flex-col gap-1">
+                            Alineación
+                            <select
+                              value={blockConfig.align || "center"}
+                              onChange={(e) =>
+                                updateBlockConfigLocal(block.id, (config) => ({
+                                  ...config,
+                                  align: e.target.value,
+                                }))
+                              }
+                              className="rounded-md border border-slate-300 px-2 py-1"
+                            >
+                              <option value="left">Izquierda</option>
+                              <option value="center">Centro</option>
+                            </select>
+                          </label>
+                          <label className="flex flex-col gap-1">
+                            Tamaño
+                            <select
+                              value={blockConfig.size || "md"}
+                              onChange={(e) =>
+                                updateBlockConfigLocal(block.id, (config) => ({
+                                  ...config,
+                                  size: e.target.value,
+                                }))
+                              }
+                              className="rounded-md border border-slate-300 px-2 py-1"
+                            >
+                              <option value="sm">Pequeño</option>
+                              <option value="md">Medio</option>
+                              <option value="lg">Grande</option>
+                            </select>
+                          </label>
+                          <label className="flex flex-col gap-1">
+                            Tono
+                            <select
+                              value={blockConfig.tone || "default"}
+                              onChange={(e) =>
+                                updateBlockConfigLocal(block.id, (config) => ({
+                                  ...config,
+                                  tone: e.target.value,
+                                }))
+                              }
+                              className="rounded-md border border-slate-300 px-2 py-1"
+                            >
+                              <option value="default">Predeterminado</option>
+                              <option value="muted">Suave</option>
+                              <option value="highlight">Resaltado</option>
+                            </select>
+                          </label>
+                        </div>
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-semibold text-white"
+                            onClick={() => handleSaveBlockConfig(block.id, blockConfig)}
+                          >
+                            Guardar bloque
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {block.blockType === "image" && (
+                      <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                        <label className="flex flex-col gap-1">
+                          URL de la imagen
+                          <input
+                            type="text"
+                            value={blockConfig.imageUrl || ""}
+                            onChange={(e) =>
+                              updateBlockConfigLocal(block.id, (config) => ({
+                                ...config,
+                                imageUrl: e.target.value,
+                              }))
+                            }
+                            className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+                            placeholder="https://..."
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          Texto alternativo
+                          <input
+                            type="text"
+                            value={blockConfig.alt || ""}
+                            onChange={(e) =>
+                              updateBlockConfigLocal(block.id, (config) => ({
+                                ...config,
+                                alt: e.target.value,
+                              }))
+                            }
+                            className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+                          />
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="flex flex-col gap-1">
+                            Forma
+                            <select
+                              value={blockConfig.shape || "rounded"}
+                              onChange={(e) =>
+                                updateBlockConfigLocal(block.id, (config) => ({
+                                  ...config,
+                                  shape: e.target.value,
+                                }))
+                              }
+                              className="rounded-md border border-slate-300 px-2 py-1"
+                            >
+                              <option value="rounded">Redondeado</option>
+                              <option value="pill">Píldora</option>
+                              <option value="square">Cuadrado</option>
+                            </select>
+                          </label>
+                          <label className="flex flex-col gap-1">
+                            Aspecto
+                            <select
+                              value={blockConfig.aspect || "auto"}
+                              onChange={(e) =>
+                                updateBlockConfigLocal(block.id, (config) => ({
+                                  ...config,
+                                  aspect: e.target.value,
+                                }))
+                              }
+                              className="rounded-md border border-slate-300 px-2 py-1"
+                            >
+                              <option value="auto">Auto</option>
+                              <option value="16:9">16:9</option>
+                              <option value="1:1">1:1</option>
+                            </select>
+                          </label>
+                        </div>
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-semibold text-white"
+                            onClick={() => handleSaveBlockConfig(block.id, blockConfig)}
+                          >
+                            Guardar bloque
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {block.blockType === "social" && (
+                      <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                        <label className="flex flex-col gap-1">
+                          Estilo
+                          <select
+                            value={blockConfig.style || "icons"}
+                            onChange={(e) =>
+                              updateBlockConfigLocal(block.id, (config) => ({
+                                ...config,
+                                style: e.target.value,
+                              }))
+                            }
+                            className="rounded-md border border-slate-300 px-2 py-1"
+                          >
+                            <option value="icons">Iconos</option>
+                            <option value="chips">Chips</option>
+                          </select>
+                        </label>
+                        <p className="text-[11px] text-slate-500">
+                          Las redes se toman del perfil (/settings/profile).
+                        </p>
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-semibold text-white"
+                            onClick={() => handleSaveBlockConfig(block.id, blockConfig)}
+                          >
+                            Guardar bloque
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {block.blockType === "separator" && (
+                      <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                        <label className="flex flex-col gap-1">
+                          Variante
+                          <select
+                            value={blockConfig.variant || "line"}
+                            onChange={(e) =>
+                              updateBlockConfigLocal(block.id, (config) => ({
+                                ...config,
+                                variant: e.target.value,
+                              }))
+                            }
+                            className="rounded-md border border-slate-300 px-2 py-1"
+                          >
+                            <option value="line">Línea</option>
+                            <option value="space">Espacio</option>
+                          </select>
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          Etiqueta (opcional)
+                          <input
+                            type="text"
+                            value={blockConfig.label || ""}
+                            onChange={(e) =>
+                              updateBlockConfigLocal(block.id, (config) => ({
+                                ...config,
                                 label: e.target.value,
-                                url: prev[block.id]?.url || "",
-                              },
-                            }))
-                          }
-                          className="w-48 rounded-md border border-slate-300 px-2 py-1 text-sm"
-                          placeholder="Mi Instagram"
-                        />
-                      </label>
-                      <label className="flex flex-col gap-1 text-xs text-slate-700">
-                        URL
-                        <input
-                          type="url"
-                          value={linkDrafts[block.id]?.url || ""}
-                          onChange={(e) =>
-                            setLinkDrafts((prev) => ({
-                              ...prev,
-                              [block.id]: {
-                                label: prev[block.id]?.label || "",
-                                url: e.target.value,
-                              },
-                            }))
-                          }
-                          className="w-64 rounded-md border border-slate-300 px-2 py-1 text-sm"
-                          placeholder="https://..."
-                        />
-                      </label>
-                      <button
-                        type="submit"
-                        disabled={linkCreating[block.id]}
-                        className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                              }))
+                            }
+                            className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+                            placeholder="Título"
+                          />
+                        </label>
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-semibold text-white"
+                            onClick={() => handleSaveBlockConfig(block.id, blockConfig)}
+                          >
+                            Guardar bloque
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {block.blockType === "links" && (
+                      <form
+                        className="mt-3 flex flex-wrap items-end gap-2"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          void handleAddLinkToBlock(block);
+                        }}
                       >
-                        {linkCreating[block.id] ? "Añadiendo..." : "+ Añadir link"}
-                      </button>
-                    </form>
-                  )}
-                </div>
-              ))}
+                        <label className="flex flex-col gap-1 text-xs text-slate-700">
+                          Texto
+                          <input
+                            type="text"
+                            value={linkDrafts[block.id]?.label || ""}
+                            onChange={(e) =>
+                              setLinkDrafts((prev) => ({
+                                ...prev,
+                                [block.id]: {
+                                  label: e.target.value,
+                                  url: prev[block.id]?.url || "",
+                                },
+                              }))
+                            }
+                            className="w-48 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                            placeholder="Mi Instagram"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1 text-xs text-slate-700">
+                          URL
+                          <input
+                            type="url"
+                            value={linkDrafts[block.id]?.url || ""}
+                            onChange={(e) =>
+                              setLinkDrafts((prev) => ({
+                                ...prev,
+                                [block.id]: {
+                                  label: prev[block.id]?.label || "",
+                                  url: e.target.value,
+                                },
+                              }))
+                            }
+                            className="w-64 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                            placeholder="https://..."
+                          />
+                        </label>
+                        <button
+                          type="submit"
+                          disabled={linkCreating[block.id]}
+                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                        >
+                          {linkCreating[block.id] ? "Añadiendo..." : "+ Añadir link"}
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -927,7 +1424,7 @@ export default function LinkPagesScreen() {
         <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-950 p-3 text-slate-50 shadow-sm">
           <h2 className="text-sm font-semibold">Vista previa</h2>
           <div className="flex justify-center">
-            <PublicLinkPage page={currentPage} variant="preview" />
+            <PublicLinkPage page={pageForPreview} variant="preview" />
           </div>
         </div>
       </div>
