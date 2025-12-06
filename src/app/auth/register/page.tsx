@@ -70,27 +70,34 @@ export default function RegisterPage() {
       return;
     }
 
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      body: JSON.stringify({
-        name: form.name,
-        email: form.email,
-        password: form.password,
-        username: usernameToSend,
-      }),
-      headers: { "Content-Type": "application/json" },
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (!res.ok) {
-      setError(data.message || "No se pudo crear la cuenta.");
-      return;
-    }
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          username: usernameToSend,
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
 
-    setForm({ name: "", email: "", password: "", username: "" });
-    setUsernameStatus("idle");
-    setUsernameMessage(null);
-    setSuccessSlug(data.slug || null);
+      if (!res.ok) {
+        setError(data.message || "No se pudo crear la cuenta.");
+        return;
+      }
+
+      setForm({ name: "", email: "", password: "", username: "" });
+      setUsernameStatus("idle");
+      setUsernameMessage(null);
+      setSuccessSlug(data.slug || null);
+    } catch (err) {
+      console.error("Register error", err);
+      setError("No se pudo crear la cuenta. Intenta más tarde.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -117,6 +124,7 @@ export default function RegisterPage() {
               placeholder="Tu nombre"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
+              autoComplete="name"
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
@@ -129,6 +137,7 @@ export default function RegisterPage() {
               required
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
+              autoComplete="email"
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
@@ -149,6 +158,7 @@ export default function RegisterPage() {
               onBlur={() => checkUsernameAvailability(form.username)}
               pattern="^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])?$"
               title={USERNAME_RULES_MESSAGE}
+              autoComplete="username"
               className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
                 usernameStatus === "available"
                   ? "border-emerald-500 focus:border-emerald-600 focus:ring-emerald-200"
@@ -182,10 +192,13 @@ export default function RegisterPage() {
               required
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
+              autoComplete="new-password"
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          <p className="min-h-[1.5rem] text-sm text-red-600" aria-live="polite">
+            {error}
+          </p>
           <button
             type="submit"
             className="w-full rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-70"

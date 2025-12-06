@@ -126,6 +126,8 @@ export function ProfileForm({ profile }: ProfileFormProps) {
         {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
         {avatarUrl && (
           <div className="flex items-center gap-2">
+            {/* Se mantiene <img> para mostrar previsualización local sin restricciones de dominio */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={avatarUrl} alt="Avatar" className="h-12 w-12 rounded-full object-cover" />
             <p className="text-xs text-slate-600 break-all">{avatarUrl}</p>
           </div>
