@@ -8,6 +8,7 @@ import type {
   LinkItem,
   LinkPageDesign,
 } from "@/types/link";
+import type { ProfileRecord } from "@/lib/db";
 
 interface ApiListPagesResponse {
   pages: LinkPageSummary[];
@@ -156,7 +157,7 @@ export default function LinkPagesScreen() {
   const [pages, setPages] = useState<LinkPageSummary[]>([]);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<LinkPageWithContent | null>(null);
-  const [designDraft, setDesignDraft] = useState<LinkPageDesign>(defaultDesign);
+  const [profile, setProfile] = useState<ProfileRecord | null>(null);
   const [loadingPages, setLoadingPages] = useState(false);
   const [loadingPage, setLoadingPage] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -187,6 +188,21 @@ export default function LinkPagesScreen() {
 
     loadPages();
   }, [selectedPageId]);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/profile");
+        if (!res.ok) return;
+        const data: ProfileRecord = await res.json();
+        setProfile(data);
+      } catch (err) {
+        console.error("Error cargando perfil:", err);
+      }
+    };
+
+    loadProfile();
+  }, []);
 
   useEffect(() => {
     const loadPage = async () => {
@@ -558,7 +574,7 @@ export default function LinkPagesScreen() {
         <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-950 p-3 text-slate-50 shadow-sm">
           <h2 className="text-sm font-semibold">Vista previa</h2>
           <div className="flex justify-center">
-            <PublicPagePreview page={pageForPreview} profile={profile} />
+            <PublicPagePreview page={currentPage} profile={profile} />
           </div>
         </div>
       </div>
@@ -566,12 +582,19 @@ export default function LinkPagesScreen() {
   );
 }
 
+function getInitials(text: string) {
+  const parts = text.split(" ").filter(Boolean);
+  if (parts.length === 0) return "RL";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
 function PublicPagePreview({
   page,
   profile,
 }: {
   page: LinkPageWithContent | null;
-  profile?: any;
+  profile?: Pick<ProfileRecord, "avatarUrl" | "title" | "bio"> | null;
 }) {
   if (!page) {
     return (
@@ -581,43 +604,30 @@ function PublicPagePreview({
     );
   }
 
-  const d = {
-    backgroundColor: page.design?.backgroundColor || defaultDesign.backgroundColor || "#020617",
-    buttonBg: page.design?.buttonBg || defaultDesign.buttonBg || "#f9fafb",
-    buttonText: page.design?.buttonText || defaultDesign.buttonText || "#020617",
-    textColor: page.design?.textColor || defaultDesign.textColor || "#f9fafb",
-    header: {
-      template: page.design?.header?.template || defaultDesign.header?.template || "classic",
-      useProfileAvatar: page.design?.header?.useProfileAvatar ?? true,
-      useProfileName: page.design?.header?.useProfileName ?? true,
-      useProfileBio: page.design?.header?.useProfileBio ?? true,
-    },
-  };
-
-  const profileName = profile?.title || profile?.name;
-  const title = d.header.useProfileName && profileName ? profileName : page.publicTitle || page.internalName;
-  const bio =
-    d.header.useProfileBio && profile?.bio ? profile.bio : page.publicDescription || "";
-  const avatarUrl = d.header.useProfileAvatar ? profile?.avatarUrl : null;
+  const title = profile?.title || page.publicTitle || page.internalName;
+  const description = page.publicDescription || profile?.bio || "";
+  const avatarUrl = profile?.avatarUrl;
+  const initials = getInitials(title);
 
   return (
-    <div
-      className="flex h-96 w-52 flex-col rounded-[2.2rem] border border-slate-700 px-3 py-4"
-      style={{ backgroundColor: d.backgroundColor }}
-    >
-      <div className="flex flex-col items-center gap-2 border-b border-slate-800 pb-3">
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="avatar" className="h-12 w-12 rounded-full object-cover" />
-        ) : (
-          <div className="h-12 w-12 rounded-full bg-slate-700" />
-        )}
-        <div className="text-center">
-          <p className="text-xs font-semibold" style={{ color: d.textColor }}>
-            {title}
-          </p>
-          {bio && (
-            <p className="mt-1 line-clamp-2 text-[10px]" style={{ color: d.textColor, opacity: 0.7 }}>
-              {bio}
+      <div className="flex h-96 w-52 flex-col rounded-[2.2rem] border border-slate-700 bg-gradient-to-b from-slate-900 to-slate-950 px-3 py-4">
+        <div className="flex flex-col items-center gap-2 border-b border-slate-800 pb-3">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="Avatar"
+              className="h-12 w-12 rounded-full border border-white/20 object-cover"
+            />
+          ) : (
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-700 text-xs font-semibold text-slate-100">
+              {initials}
+            </div>
+          )}
+          <div className="text-center">
+            <p className="text-xs font-semibold text-slate-50">{title}</p>
+            {description && (
+            <p className="mt-1 line-clamp-2 text-[10px] text-slate-400">
+              {description}
             </p>
           )}
         </div>

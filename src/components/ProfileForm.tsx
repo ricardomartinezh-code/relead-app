@@ -20,24 +20,15 @@ export function ProfileForm({ profile }: ProfileFormProps) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-
-    if (!uploadPreset || !cloudName) {
-      setUploadError("Cloudinary no está configurado correctamente");
-      return;
-    }
-
     setUploading(true);
     setUploadError(null);
     setMessage(null);
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", uploadPreset);
 
     try {
-      const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      const uploadResponse = await fetch("/api/upload/avatar", {
         method: "POST",
         body: formData,
       });
@@ -45,21 +36,19 @@ export function ProfileForm({ profile }: ProfileFormProps) {
       if (!uploadResponse.ok) {
         const errorData = await uploadResponse.json().catch(() => ({}));
         const errorMessage =
-          typeof errorData?.error?.message === "string"
-            ? errorData.error.message
-            : "No se pudo subir la imagen";
+          typeof errorData?.error === "string" ? errorData.error : "No se pudo subir la imagen";
         throw new Error(errorMessage);
       }
 
-      const uploadData: { secure_url?: string } = await uploadResponse.json();
-      if (!uploadData.secure_url) {
+      const uploadData: { url?: string } = await uploadResponse.json();
+      if (!uploadData.url) {
         throw new Error("No se pudo obtener la URL del avatar");
       }
 
-      const saveResponse = await fetch("/api/profile/avatar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ avatarUrl: uploadData.secure_url }),
+      const saveResponse = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({ avatarUrl: uploadData.url }),
       });
 
       if (!saveResponse.ok) {
@@ -68,7 +57,9 @@ export function ProfileForm({ profile }: ProfileFormProps) {
         throw new Error(message);
       }
 
-      setAvatarUrl(uploadData.secure_url);
+      await saveResponse.json().catch(() => ({}));
+
+      setAvatarUrl(uploadData.url);
       setMessage("Avatar actualizado");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error subiendo imagen";
