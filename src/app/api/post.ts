@@ -27,7 +27,9 @@ async function handler(req: Request) {
   return new Response(JSON.stringify(post), {
     headers: { 'content-type': 'application/json' }
   });
-}
+};
+
+export default handler;
 
 export default handler;
 

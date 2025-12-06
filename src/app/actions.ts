@@ -10,6 +10,7 @@ export async function getData() {
     }
 
     const sql = neon(databaseUrl);
-    const data = await sql`...`;
-    return data;
+    // Minimal sanity query so this action is usable as a health check/example.
+    const [result] = await sql`SELECT 1 AS ok`;
+    return result;
 }

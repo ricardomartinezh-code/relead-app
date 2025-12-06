@@ -17,20 +17,39 @@ const steps = [
 ];
 
 const benefits = [
-  "Una sola página para todo tu contenido",
-  "Diseñado para creadores y pequeños negocios",
-  "Listo para integrarse con WhatsApp Business",
+  {
+    title: "Una sola página",
+    description: "Todos tus enlaces en un solo lugar con un diseño limpio y personalizable.",
+  },
+  {
+    title: "Listo para WhatsApp",
+    description: "Optimizado para CTWA y flujos de venta directos a tu chat.",
+  },
+  {
+    title: "Enfoque en métricas",
+    description: "Entiende qué enlaces funcionan y decide rápido qué impulsar.",
+  },
+];
+
+const highlights = [
+  { label: "2 min", value: "Para publicar tu primer link" },
+  { label: "Links ilimitados", value: "Organiza, activa y desactiva sin fricción" },
+  { label: "Sin código", value: "Diseños listos para compartir en redes" },
 ];
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 via-white to-slate-50 text-slate-900">
       <Navbar />
       <main className="flex-1">
-        <div className="mx-auto flex max-w-4xl flex-col space-y-16 px-4 py-12">
-          <section className="rounded-3xl bg-white px-6 py-12 text-center shadow-sm ring-1 ring-slate-200 sm:px-10">
-            <div className="mx-auto max-w-3xl space-y-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">ReLead</p>
+        <div className="mx-auto flex max-w-5xl flex-col space-y-16 px-4 py-12">
+          <section className="relative overflow-hidden rounded-3xl bg-white px-6 py-12 text-center shadow-sm ring-1 ring-slate-200 sm:px-10">
+            <div className="pointer-events-none absolute inset-0 opacity-50 blur-3xl">
+              <div className="absolute -left-10 top-0 h-40 w-40 rounded-full bg-amber-100" />
+              <div className="absolute bottom-0 right-0 h-52 w-52 rounded-full bg-sky-100" />
+            </div>
+            <div className="relative mx-auto max-w-3xl space-y-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-600">ReLead</p>
               <div className="space-y-4">
                 <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
                   Crea tu página de enlaces en minutos
@@ -43,15 +62,31 @@ export default function HomePage() {
                 <Link
                   href="/dashboard"
                   className="w-full rounded-full bg-slate-900 px-6 py-3 text-center text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-800 sm:w-auto"
+                  prefetch
                 >
                   Ir al panel
                 </Link>
                 <Link
                   href="/demo"
                   className="w-full rounded-full border border-slate-300 px-6 py-3 text-center text-sm font-semibold text-slate-900 transition hover:border-slate-400 hover:bg-slate-100 sm:w-auto"
+                  prefetch
                 >
                   Ver un ejemplo
                 </Link>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {highlights.map((item) => (
+                  <div
+                    key={item.label}
+                    className="rounded-2xl border border-slate-100 bg-slate-50/60 px-4 py-3 text-left shadow-sm ring-1 ring-slate-100"
+                    aria-label={`${item.label}: ${item.value}`}
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                      {item.label}
+                    </p>
+                    <p className="text-sm font-medium text-slate-900">{item.value}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </section>
@@ -80,14 +115,14 @@ export default function HomePage() {
               <h2 className="text-3xl font-semibold">Hecho para compartir mejor</h2>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
-              {benefits.map((title) => (
+              {benefits.map((benefit) => (
                 <div
-                  key={title}
+                  key={benefit.title}
                   className="rounded-2xl bg-white p-6 text-left shadow-sm ring-1 ring-slate-200"
                 >
-                  <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+                  <h3 className="text-lg font-semibold text-slate-900">{benefit.title}</h3>
                   <p className="mt-2 text-sm text-slate-700">
-                    Publícalo una vez y dirige a tus visitantes al contenido correcto, sin enlaces rotos ni confusión.
+                    {benefit.description}
                   </p>
                 </div>
               ))}

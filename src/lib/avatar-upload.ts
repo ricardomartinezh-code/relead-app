@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { UploadApiErrorResponse, UploadApiResponse } from "cloudinary";
-import cloudinary from "@/lib/cloudinary";
+import cloudinary, { isCloudinaryReady } from "@/lib/cloudinary";
 
 async function uploadToCloudinary(buffer: Buffer): Promise<UploadApiResponse> {
   return new Promise((resolve, reject) => {
@@ -21,6 +21,13 @@ async function uploadToCloudinary(buffer: Buffer): Promise<UploadApiResponse> {
 
 export async function handleAvatarUpload(req: Request) {
   try {
+    if (!isCloudinaryReady) {
+      return NextResponse.json(
+        { error: "Cloudinary no está configurado. Revisa las variables de entorno." },
+        { status: 500 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file");
 
