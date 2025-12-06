@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import type {
   LinkPageSummary,
   LinkPageWithContent,
@@ -8,6 +8,8 @@ import type {
   LinkItem,
   LinkPageDesign,
 } from "@/types/link";
+import type { ProfileRecord } from "@/lib/db";
+import PublicLinkPage from "@/components/link-pages/PublicLinkPage";
 
 interface ApiListPagesResponse {
   pages: LinkPageSummary[];
@@ -16,6 +18,12 @@ interface ApiListPagesResponse {
 interface ApiPageResponse {
   page: LinkPageWithContent;
 }
+
+const isProfileResponse = (
+  value: unknown
+): value is { profile?: ProfileRecord | null } => {
+  return typeof value === "object" && value !== null && "profile" in value;
+};
 
 const defaultDesign: LinkPageDesign = {
   backgroundColor: "#020617",
@@ -161,7 +169,16 @@ export default function LinkPagesScreen() {
   const [loadingPage, setLoadingPage] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  const [designDraft, setDesignDraft] = useState<LinkPageDesign>(defaultDesign);
+  const [pageForm, setPageForm] = useState({ internalName: "", slug: "" });
+  const [pageSlugEdited, setPageSlugEdited] = useState(false);
+  const [pageFormError, setPageFormError] = useState<string | null>(null);
+  const [blockForm, setBlockForm] = useState({ title: "", blockType: "links" });
+  const [blockCreating, setBlockCreating] = useState(false);
+  const [linkDrafts, setLinkDrafts] = useState<
+    Record<string, { label: string; url: string }>
+  >({});
+  const [linkCreating, setLinkCreating] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const loadPages = async () => {
@@ -176,7 +193,8 @@ export default function LinkPagesScreen() {
         const data: ApiListPagesResponse = await res.json();
         setPages(data.pages || []);
         if (!selectedPageId && data.pages.length > 0) {
-          setSelectedPageId(data.pages[0].id);
+          const defaultPage = data.pages.find((p) => p.isDefault) || data.pages[0];
+          setSelectedPageId(defaultPage.id);
         }
       } catch (err: any) {
         setError(err.message || "Error cargando páginas");
@@ -187,6 +205,25 @@ export default function LinkPagesScreen() {
 
     loadPages();
   }, [selectedPageId]);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/profile");
+        if (!res.ok) return;
+        const payload = await res.json();
+        const profileData: ProfileRecord | null = isProfileResponse(payload)
+          ? payload.profile ?? null
+          : (payload as ProfileRecord | null);
+
+        setProfile(profileData);
+      } catch (err) {
+        console.error("Error cargando perfil:", err);
+      }
+    };
+
+    loadProfile();
+  }, []);
 
   useEffect(() => {
     const loadPage = async () => {
@@ -229,37 +266,31 @@ export default function LinkPagesScreen() {
     }
   }, [currentPage]);
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const res = await fetch("/api/profile");
-        if (!res.ok) return;
-        const data = await res.json();
-        setProfile(data.profile || data);
-      } catch {
-        // ignorar errores de perfil por ahora
-      }
-    };
+  const slugify = (value: string) =>
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/-+/g, "-");
 
-    loadProfile();
-  }, []);
-
-  const handleCreatePage = async () => {
+  const handleCreatePage = async (e?: FormEvent) => {
+    e?.preventDefault();
     try {
       setCreating(true);
       setError(null);
+      setPageFormError(null);
 
-      const internalName = prompt("Nombre interno de la página (ej. Principal):");
+      const internalName = pageForm.internalName.trim();
+      const slugInput = pageForm.slug.trim();
       if (!internalName) {
+        setPageFormError("El nombre interno es obligatorio");
         setCreating(false);
         return;
       }
 
-      const slugBase = internalName
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^a-z0-9-]/g, "");
-      const slug = slugBase || "pagina";
+      const generatedSlug = slugify(internalName);
+      const slug = slugInput ? slugify(slugInput) : generatedSlug || "pagina";
 
       const res = await fetch("/api/link-pages", {
         method: "POST",
@@ -282,20 +313,28 @@ export default function LinkPagesScreen() {
 
       const data = await res.json();
       const newPage: LinkPageSummary = data.page;
-      setPages((prev) => [...prev, newPage]);
+      setPages((prev) =>
+        newPage.isDefault
+          ? [...prev.map((p) => ({ ...p, isDefault: false })), newPage]
+          : [...prev, newPage]
+      );
       setSelectedPageId(newPage.id);
+      setPageForm({ internalName: "", slug: "" });
+      setPageSlugEdited(false);
     } catch (err: any) {
-      setError(err.message || "Error creando página");
+      setPageFormError(err.message || "Error creando página");
     } finally {
       setCreating(false);
     }
   };
 
-  const handleAddBlock = async () => {
+  const handleAddBlock = async (e: FormEvent) => {
+    e.preventDefault();
     if (!currentPage) return;
     try {
       setError(null);
-      const title = prompt("Título del bloque (ej. Links principales):") || null;
+      setBlockCreating(true);
+      const title = blockForm.title.trim() || null;
       const position = currentPage.blocks.length;
 
       const res = await fetch("/api/link-blocks", {
@@ -305,7 +344,7 @@ export default function LinkPagesScreen() {
         },
         body: JSON.stringify({
           pageId: currentPage.id,
-          blockType: "links",
+          blockType: blockForm.blockType,
           title,
           subtitle: null,
           position,
@@ -336,8 +375,11 @@ export default function LinkPagesScreen() {
             }
           : prev
       );
+      setBlockForm({ title: "", blockType: blockForm.blockType });
     } catch (err: any) {
       setError(err.message || "Error creando bloque");
+    } finally {
+      setBlockCreating(false);
     }
   };
 
@@ -345,10 +387,14 @@ export default function LinkPagesScreen() {
     if (!currentPage) return;
     try {
       setError(null);
-      const label = prompt("Texto del link (ej. Mi Instagram):");
-      if (!label) return;
-
-      const url = prompt("URL del link (ej. https://instagram.com/...):") || null;
+      setLinkCreating((prev) => ({ ...prev, [block.id]: true }));
+      const draft = linkDrafts[block.id] || { label: "", url: "" };
+      const label = draft.label.trim();
+      const url = draft.url.trim() || null;
+      if (!label) {
+        setLinkCreating((prev) => ({ ...prev, [block.id]: false }));
+        return;
+      }
       const position = block.items.length;
 
       const res = await fetch("/api/link-items", {
@@ -381,8 +427,153 @@ export default function LinkPagesScreen() {
           ),
         };
       });
+      setLinkDrafts((prev) => ({ ...prev, [block.id]: { label: "", url: "" } }));
     } catch (err: any) {
       setError(err.message || "Error creando link");
+    } finally {
+      setLinkCreating((prev) => ({ ...prev, [block.id]: false }));
+    }
+  };
+
+  const reloadCurrentPage = async () => {
+    if (!selectedPageId) return;
+    try {
+      setLoadingPage(true);
+      const res = await fetch(`/api/link-pages/${selectedPageId}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Error recargando página");
+      }
+      const data: ApiPageResponse = await res.json();
+      setCurrentPage(data.page);
+    } catch (err: any) {
+      setError(err.message || "Error recargando página");
+    } finally {
+      setLoadingPage(false);
+    }
+  };
+
+  const handleMoveBlock = async (
+    blockId: string,
+    direction: "up" | "down"
+  ) => {
+    if (!currentPage) return;
+    const index = currentPage.blocks.findIndex((b) => b.id === blockId);
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (index === -1 || targetIndex < 0 || targetIndex >= currentPage.blocks.length) return;
+
+    const reordered = [...currentPage.blocks];
+    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+
+    const updatedBlocks = reordered.map((block, idx) => ({ ...block, position: idx }));
+    const originalPositions = Object.fromEntries(
+      currentPage.blocks.map((block) => [block.id, block.position])
+    );
+    const changedBlocks = updatedBlocks.filter(
+      (block) => block.position !== originalPositions[block.id]
+    );
+
+    setCurrentPage((prev) => (prev ? { ...prev, blocks: updatedBlocks } : prev));
+
+    try {
+      await Promise.all(
+        changedBlocks.map((block) =>
+          fetch(`/api/link-blocks/${block.id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+            },
+            body: JSON.stringify({ position: block.position }),
+          })
+        )
+      );
+    } catch (err: any) {
+      setError(err.message || "Error reordenando bloques");
+      await reloadCurrentPage();
+    }
+  };
+
+  const handleMoveItem = async (
+    block: LinkBlockWithItems,
+    itemId: string,
+    direction: "up" | "down"
+  ) => {
+    if (!currentPage || block.items.length === 0) return;
+    const index = block.items.findIndex((item) => item.id === itemId);
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (index === -1 || targetIndex < 0 || targetIndex >= block.items.length) return;
+
+    const reorderedItems = [...block.items];
+    [reorderedItems[index], reorderedItems[targetIndex]] = [
+      reorderedItems[targetIndex],
+      reorderedItems[index],
+    ];
+    const updatedItems = reorderedItems.map((item, idx) => ({ ...item, position: idx }));
+
+    setCurrentPage((prev) =>
+      prev
+        ? {
+            ...prev,
+            blocks: prev.blocks.map((b) =>
+              b.id === block.id ? { ...b, items: updatedItems } : b
+            ),
+          }
+        : prev
+    );
+
+    const originalItemPositions = Object.fromEntries(
+      block.items.map((item) => [item.id, item.position])
+    );
+    const changedItems = updatedItems.filter(
+      (item) => item.position !== originalItemPositions[item.id]
+    );
+
+    try {
+      await Promise.all(
+        changedItems.map((item) =>
+          fetch(`/api/link-items/${item.id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+            },
+            body: JSON.stringify({ position: item.position }),
+          })
+        )
+      );
+    } catch (err: any) {
+      setError(err.message || "Error reordenando links");
+      await reloadCurrentPage();
+    }
+  };
+
+  const handleSetDefault = async (pageId: string) => {
+    try {
+      setError(null);
+      const res = await fetch(`/api/link-pages/${pageId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        body: JSON.stringify({ isDefault: true }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "No se pudo actualizar la página por defecto");
+      }
+
+      const data: ApiPageResponse = await res.json();
+      const updatedPage = data.page;
+      setPages((prev) =>
+        prev.map((p) => ({ ...p, isDefault: p.id === updatedPage.id }))
+      );
+      setCurrentPage((prev) =>
+        prev && prev.id === updatedPage.id
+          ? { ...prev, isDefault: true }
+          : prev
+      );
+    } catch (err: any) {
+      setError(err.message || "Error al marcar página por defecto");
     }
   };
 
@@ -399,14 +590,56 @@ export default function LinkPagesScreen() {
             Crea y edita tus páginas tipo link-in-bio.
           </p>
         </div>
-        <button
-          onClick={handleCreatePage}
-          disabled={creating}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60"
-        >
-          {creating ? "Creando..." : "Nueva página"}
-        </button>
       </header>
+
+      <form
+        onSubmit={handleCreatePage}
+        className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:grid-cols-[1.5fr,1.5fr,auto]"
+      >
+        <label className="flex flex-col gap-1 text-xs text-slate-700">
+          Nombre interno
+          <input
+            type="text"
+            value={pageForm.internalName}
+            onChange={(e) => {
+              const value = e.target.value;
+              setPageForm((prev) => ({
+                ...prev,
+                internalName: value,
+                slug: pageSlugEdited ? prev.slug : slugify(value),
+              }));
+            }}
+            className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+            placeholder="Principal"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-slate-700">
+          Slug
+          <input
+            type="text"
+            value={pageForm.slug}
+            onChange={(e) => {
+              setPageSlugEdited(true);
+              setPageForm((prev) => ({ ...prev, slug: e.target.value }));
+            }}
+            className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+            placeholder="mi-pagina"
+          />
+        </label>
+        <div className="flex items-end justify-end">
+          <button
+            type="submit"
+            disabled={creating}
+            className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60"
+          >
+            {creating ? "Creando..." : "Crear página"}
+          </button>
+        </div>
+      </form>
+
+      {pageFormError && (
+        <p className="text-sm text-red-600">{pageFormError}</p>
+      )}
 
       {error && (
         <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -423,17 +656,32 @@ export default function LinkPagesScreen() {
           </span>
         ) : (
           pages.map((page) => (
-            <button
-              key={page.id}
-              onClick={() => setSelectedPageId(page.id)}
-              className={`rounded-full border px-3 py-1 text-sm ${
-                page.id === selectedPageId
-                  ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              {page.internalName}
-            </button>
+            <div key={page.id} className="flex items-center gap-1">
+              <button
+                onClick={() => setSelectedPageId(page.id)}
+                className={`flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${
+                  page.id === selectedPageId
+                    ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {page.internalName}
+                {page.isDefault && (
+                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                    Default
+                  </span>
+                )}
+              </button>
+              {!page.isDefault && (
+                <button
+                  onClick={() => handleSetDefault(page.id)}
+                  className="rounded-full px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-100"
+                  title="Marcar como página por defecto"
+                >
+                  Hacer default
+                </button>
+              )}
+            </div>
           ))
         )}
       </div>
@@ -472,17 +720,48 @@ export default function LinkPagesScreen() {
             }}
           />
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <h2 className="text-sm font-semibold text-slate-900">
               Bloques de la página
             </h2>
-            <button
-              onClick={handleAddBlock}
-              disabled={!currentPage}
-              className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-            >
-              + Añadir bloque
-            </button>
+            {currentPage && (
+              <form
+                onSubmit={handleAddBlock}
+                className="flex flex-wrap items-end gap-2"
+              >
+                <label className="flex flex-col gap-1 text-xs text-slate-700">
+                  Título del bloque
+                  <input
+                    type="text"
+                    value={blockForm.title}
+                    onChange={(e) =>
+                      setBlockForm((prev) => ({ ...prev, title: e.target.value }))
+                    }
+                    className="w-48 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                    placeholder="Links principales"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-slate-700">
+                  Tipo
+                  <select
+                    value={blockForm.blockType}
+                    onChange={(e) =>
+                      setBlockForm((prev) => ({ ...prev, blockType: e.target.value }))
+                    }
+                    className="w-32 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                  >
+                    <option value="links">Links</option>
+                  </select>
+                </label>
+                <button
+                  type="submit"
+                  disabled={blockCreating}
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {blockCreating ? "Añadiendo..." : "+ Añadir bloque"}
+                </button>
+              </form>
+            )}
           </div>
 
           {loadingPage && (
@@ -503,13 +782,13 @@ export default function LinkPagesScreen() {
                 </p>
               )}
 
-              {currentPage.blocks.map((block) => (
+              {currentPage.blocks.map((block, blockIndex) => (
                 <div
                   key={block.id}
                   className="rounded-lg border border-slate-200 bg-slate-50 p-3"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-1">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         {block.blockType}
                       </p>
@@ -517,14 +796,28 @@ export default function LinkPagesScreen() {
                         {block.title || "Bloque sin título"}
                       </p>
                     </div>
-                    {block.blockType === "links" && (
-                      <button
-                        onClick={() => handleAddLinkToBlock(block)}
-                        className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-white"
-                      >
-                        + Link
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <div className="flex flex-col gap-1 text-[10px] text-slate-500">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveBlock(block.id, "up")}
+                          disabled={blockIndex === 0}
+                          className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold hover:bg-slate-50 disabled:opacity-40"
+                          title="Mover arriba"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveBlock(block.id, "down")}
+                          disabled={blockIndex === currentPage.blocks.length - 1}
+                          className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold hover:bg-slate-50 disabled:opacity-40"
+                          title="Mover abajo"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   {block.blockType === "links" && (
@@ -534,20 +827,96 @@ export default function LinkPagesScreen() {
                           Sin links aún.
                         </li>
                       )}
-                      {block.items.map((item) => (
+                      {block.items.map((item, itemIndex) => (
                         <li
                           key={item.id}
-                          className="flex items-center justify-between rounded-md bg-white px-2 py-1 text-xs text-slate-800"
+                          className="flex items-center justify-between gap-2 rounded-md bg-white px-2 py-1 text-xs text-slate-800"
                         >
-                          <span>{item.label}</span>
-                          {item.url && (
-                            <span className="truncate text-[11px] text-slate-400">
-                              {item.url}
-                            </span>
-                          )}
+                          <div className="flex flex-col">
+                            <span>{item.label}</span>
+                            {item.url && (
+                              <span className="truncate text-[11px] text-slate-400">
+                                {item.url}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveItem(block, item.id, "up")}
+                              disabled={itemIndex === 0}
+                              className="rounded border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] font-semibold hover:bg-slate-100 disabled:opacity-40"
+                              title="Mover arriba"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveItem(block, item.id, "down")}
+                              disabled={itemIndex === block.items.length - 1}
+                              className="rounded border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] font-semibold hover:bg-slate-100 disabled:opacity-40"
+                              title="Mover abajo"
+                            >
+                              ↓
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ul>
+                  )}
+
+                  {block.blockType === "links" && (
+                    <form
+                      className="mt-3 flex flex-wrap items-end gap-2"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void handleAddLinkToBlock(block);
+                      }}
+                    >
+                      <label className="flex flex-col gap-1 text-xs text-slate-700">
+                        Texto
+                        <input
+                          type="text"
+                          value={linkDrafts[block.id]?.label || ""}
+                          onChange={(e) =>
+                            setLinkDrafts((prev) => ({
+                              ...prev,
+                              [block.id]: {
+                                label: e.target.value,
+                                url: prev[block.id]?.url || "",
+                              },
+                            }))
+                          }
+                          className="w-48 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                          placeholder="Mi Instagram"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1 text-xs text-slate-700">
+                        URL
+                        <input
+                          type="url"
+                          value={linkDrafts[block.id]?.url || ""}
+                          onChange={(e) =>
+                            setLinkDrafts((prev) => ({
+                              ...prev,
+                              [block.id]: {
+                                label: prev[block.id]?.label || "",
+                                url: e.target.value,
+                              },
+                            }))
+                          }
+                          className="w-64 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                          placeholder="https://..."
+                        />
+                      </label>
+                      <button
+                        type="submit"
+                        disabled={linkCreating[block.id]}
+                        className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        {linkCreating[block.id] ? "Añadiendo..." : "+ Añadir link"}
+                      </button>
+                    </form>
                   )}
                 </div>
               ))}
@@ -558,115 +927,9 @@ export default function LinkPagesScreen() {
         <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-950 p-3 text-slate-50 shadow-sm">
           <h2 className="text-sm font-semibold">Vista previa</h2>
           <div className="flex justify-center">
-            <PublicPagePreview page={pageForPreview} profile={profile} />
+            <PublicLinkPage page={currentPage} variant="preview" />
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function PublicPagePreview({
-  page,
-  profile,
-}: {
-  page: LinkPageWithContent | null;
-  profile?: any;
-}) {
-  if (!page) {
-    return (
-      <div className="flex h-80 w-44 items-center justify-center rounded-[2rem] border border-slate-700 bg-slate-900 text-xs text-slate-500">
-        Sin página seleccionada
-      </div>
-    );
-  }
-
-  const d = {
-    backgroundColor: page.design?.backgroundColor || defaultDesign.backgroundColor || "#020617",
-    buttonBg: page.design?.buttonBg || defaultDesign.buttonBg || "#f9fafb",
-    buttonText: page.design?.buttonText || defaultDesign.buttonText || "#020617",
-    textColor: page.design?.textColor || defaultDesign.textColor || "#f9fafb",
-    header: {
-      template: page.design?.header?.template || defaultDesign.header?.template || "classic",
-      useProfileAvatar: page.design?.header?.useProfileAvatar ?? true,
-      useProfileName: page.design?.header?.useProfileName ?? true,
-      useProfileBio: page.design?.header?.useProfileBio ?? true,
-    },
-  };
-
-  const profileName = profile?.title || profile?.name;
-  const title = d.header.useProfileName && profileName ? profileName : page.publicTitle || page.internalName;
-  const bio =
-    d.header.useProfileBio && profile?.bio ? profile.bio : page.publicDescription || "";
-  const avatarUrl = d.header.useProfileAvatar ? profile?.avatarUrl : null;
-
-  return (
-    <div
-      className="flex h-96 w-52 flex-col rounded-[2.2rem] border border-slate-700 px-3 py-4"
-      style={{ backgroundColor: d.backgroundColor }}
-    >
-      <div className="flex flex-col items-center gap-2 border-b border-slate-800 pb-3">
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="avatar" className="h-12 w-12 rounded-full object-cover" />
-        ) : (
-          <div className="h-12 w-12 rounded-full bg-slate-700" />
-        )}
-        <div className="text-center">
-          <p className="text-xs font-semibold" style={{ color: d.textColor }}>
-            {title}
-          </p>
-          {bio && (
-            <p className="mt-1 line-clamp-2 text-[10px]" style={{ color: d.textColor, opacity: 0.7 }}>
-              {bio}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-3 flex-1 space-y-2 overflow-y-auto pb-2">
-        {page.blocks.map((block) => {
-          if (!block.isVisible) return null;
-
-          if (block.blockType === "links") {
-            return (
-              <div key={block.id} className="space-y-1">
-                {block.title && (
-                  <p className="text-[10px]" style={{ color: d.textColor, opacity: 0.8 }}>
-                    {block.title}
-                  </p>
-                )}
-                {block.items.map((item) => (
-                  <button
-                    key={item.id}
-                    className="flex w-full items-center justify-center rounded-lg px-2 py-1 text-[10px] font-medium"
-                    style={{
-                      backgroundColor: d.buttonBg,
-                      color: d.buttonText,
-                    }}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            );
-          }
-
-          return (
-            <div
-              key={block.id}
-              className="rounded-lg border border-slate-800 bg-slate-900 px-2 py-2"
-            >
-              <p className="text-[10px] font-semibold text-slate-300">
-                {block.title || `Bloque ${block.blockType}`}
-              </p>
-              {block.subtitle && (
-                <p className="mt-1 text-[10px] text-slate-500">
-                  {block.subtitle}
-                </p>
-              )}
-            </div>
-          );
-        })}
       </div>
     </div>
   );

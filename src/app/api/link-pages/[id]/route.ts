@@ -4,6 +4,19 @@ import { sql } from "@/lib/db/client";
 import { updateLinkPageDesign } from "@/lib/db/linkPages";
 import { getLinkPageWithContent } from "@/lib/db/linkPageFull";
 
+function normalizeSlug(raw: string) {
+  return (
+    raw
+      ?.toString()
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/-+/g, "-")
+      .replace(/^-+|-+$/g, "") || null
+  );
+}
+
 interface RouteParams {
   params: { id: string };
 }
@@ -34,7 +47,11 @@ export async function PUT(req: Request, { params }: RouteParams) {
 
   try {
     const body = await req.json();
-    const { internalName, slug, publicTitle, publicDescription, design } = body;
+    const { internalName, slug, publicTitle, publicDescription, design, isDefault, isPublished } = body;
+
+    const normalizedSlug = slug ? normalizeSlug(slug) : null;
+    const normalizedIsPublished =
+      typeof isPublished === "boolean" ? isPublished : null;
 
     const rows = await sql/*sql*/`
       SELECT user_id FROM link_pages WHERE id = ${id}
@@ -43,41 +60,62 @@ export async function PUT(req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "No encontrado" }, { status: 404 });
     }
 
+    if (normalizedSlug) {
+      const duplicate = await sql/*sql*/`
+        SELECT 1 FROM link_pages WHERE user_id = ${user.id} AND slug = ${normalizedSlug} AND id <> ${id} LIMIT 1
+      `;
+      if (duplicate.length) {
+        return NextResponse.json(
+          { error: "Ya existe una página con ese slug para este usuario" },
+          { status: 409 }
+        );
+      }
+    }
+
     await sql/*sql*/`
       UPDATE link_pages
       SET
         internal_name = COALESCE(${internalName}, internal_name),
-        slug = COALESCE(${slug}, slug),
+        slug = COALESCE(${normalizedSlug}, slug),
         public_title = COALESCE(${publicTitle}, public_title),
         public_description = COALESCE(${publicDescription}, public_description),
+        is_published = COALESCE(${normalizedIsPublished}, is_published),
         updated_at = now()
       WHERE id = ${id}
     `;
 
-    let updated;
     if (design) {
-      updated = await updateLinkPageDesign(id, design);
-    } else {
-      const updatedRows = await sql/*sql*/`
-        SELECT * FROM link_pages WHERE id = ${id}
-      `;
-      const r = updatedRows[0];
-      updated = {
-        id: r.id,
-        userId: r.user_id,
-        internalName: r.internal_name,
-        slug: r.slug,
-        publicTitle: r.public_title,
-        publicDescription: r.public_description,
-        isDefault: r.is_default,
-        isPublished: r.is_published,
-        design: r.design,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
-      };
+      await updateLinkPageDesign(id, design);
     }
 
-    return NextResponse.json({ page: updated });
+    if (isDefault === true) {
+      await sql/*sql*/`
+        UPDATE link_pages SET is_default = false WHERE user_id = ${user.id}
+      `;
+      await sql/*sql*/`
+        UPDATE link_pages SET is_default = true, updated_at = now() WHERE id = ${id}
+      `;
+    }
+
+    const finalRows = await sql/*sql*/`
+      SELECT * FROM link_pages WHERE id = ${id}
+    `;
+    const finalRow = finalRows[0];
+    const finalPage = {
+      id: finalRow.id,
+      userId: finalRow.user_id,
+      internalName: finalRow.internal_name,
+      slug: finalRow.slug,
+      publicTitle: finalRow.public_title,
+      publicDescription: finalRow.public_description,
+      isDefault: finalRow.is_default,
+      isPublished: finalRow.is_published,
+      design: finalRow.design,
+      createdAt: finalRow.created_at,
+      updatedAt: finalRow.updated_at,
+    };
+
+    return NextResponse.json({ page: finalPage });
   } catch (error) {
     console.error("Error actualizando página:", error);
     return NextResponse.json(
