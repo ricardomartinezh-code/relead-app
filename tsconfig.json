@@ -25,6 +25,9 @@
       "@/lib/*": [
         "src/lib/*"
       ],
+      "@/types/*": [
+        "src/types/*"
+      ],
       "@/app/*": [
         "src/app/*"
       ]
