@@ -3,6 +3,14 @@ import { compare, hashSync } from "bcrypt";
 import { randomUUID } from "crypto";
 import { ensureDatabaseSchema } from "./db/migrate";
 
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL no está definida. Configúrala antes de iniciar el servidor.");
+}
+
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
 // Tipos de datos
 export type UserRecord = {
   id: string;
@@ -63,7 +71,10 @@ export type WhatsAppAccountRecord = {
 
 // Configurar pool de conexión
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: databaseUrl,
+  max: 5,
+  idleTimeoutMillis: 10_000,
+  statement_timeout: 5_000,
 });
 
 void ensureDatabaseSchema();
@@ -99,9 +110,10 @@ ensureCompatibilityViews();
  */
 export async function getUserByEmail(email: string): Promise<UserRecord | null> {
   try {
+    const normalizedEmail = normalizeEmail(email);
     const result = await pool.query(
       "SELECT id, email, name, password, profile_id AS \"profileId\" FROM users WHERE email = $1 AND is_active = true",
-      [email]
+      [normalizedEmail]
     );
     return result.rows[0] || null;
   } catch (error) {
@@ -115,9 +127,10 @@ export async function getUserByEmail(email: string): Promise<UserRecord | null> 
  */
 export async function getUserByUsername(username: string): Promise<UserRecord | null> {
   try {
+    const normalizedUsername = username.trim().toLowerCase();
     const result = await pool.query(
       "SELECT id, email, name, password, profile_id AS \"profileId\" FROM users WHERE username = $1 AND is_active = true",
-      [username]
+      [normalizedUsername]
     );
     return result.rows[0] || null;
   } catch (error) {
@@ -152,6 +165,7 @@ export async function createUser(
   username?: string,
   slug?: string
 ): Promise<UserRecord & { slug: string; username: string }> {
+  const normalizedEmail = normalizeEmail(email);
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -167,7 +181,7 @@ export async function createUser(
       `INSERT INTO users (id, email, name, password, username, profile_id, is_active, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, true, CURRENT_TIMESTAMP)
        RETURNING id, email, name, profile_id AS "profileId"`,
-      [userId, email, name, hashedPassword, usernameToUse, profileId]
+      [userId, normalizedEmail, name, hashedPassword, usernameToUse, profileId]
     );
 
     // Crear perfil básico
