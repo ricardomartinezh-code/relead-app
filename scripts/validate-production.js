@@ -15,11 +15,28 @@ const { Pool } = require("pg");
 require("dotenv").config();
 
 const requiredEnv = [
+  // Auth
   "NEXTAUTH_SECRET",
   "NEXTAUTH_URL",
+
+  // DB (Neon)
+  "DATABASE_URL",
+
+  // Cloudinary
+  "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME",
+  "CLOUDINARY_API_KEY",
+  "CLOUDINARY_API_SECRET",
+
+  // Meta / WhatsApp (server)
+  "META_APP_ID",
+  "META_APP_SECRET",
+  "META_REDIRECT_URI",
+
+  // Meta / WhatsApp (client)
+  "NEXT_PUBLIC_META_APP_ID",
+  "NEXT_PUBLIC_META_REDIRECT_URI",
   "NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_CTWA",
   "NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_NO_CTWA",
-  "DATABASE_URL",
 ];
 
 function assertEnv() {

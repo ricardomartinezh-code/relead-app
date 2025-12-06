@@ -158,10 +158,10 @@ export default function HomePage() {
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6 text-sm text-slate-700 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-center sm:text-left">© {new Date().getFullYear()} ReLead</p>
           <div className="flex items-center justify-center gap-4">
-            <Link href="/legal/privacy" className="hover:text-slate-900">
+            <Link href="/dashboard/legal/privacy" className="hover:text-slate-900">
               Política de privacidad
             </Link>
-            <Link href="/legal/terms" className="hover:text-slate-900">
+            <Link href="/dashboard/legal/terms" className="hover:text-slate-900">
               Términos y condiciones
             </Link>
           </div>
