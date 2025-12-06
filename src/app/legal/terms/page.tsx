@@ -5,7 +5,7 @@ const TermsPage = () => {
         <h1 className="text-3xl font-semibold mb-6">Términos y condiciones</h1>
 
         <div className="prose prose-slate">
-          <p className="uppercase tracking-wide text-sm text-gray-500">Legal</p>
+          <p className="uppercase tracking-wide text-sm text-slate-600">Legal</p>
           <h1>Términos y Condiciones de Uso — ReLead Digital</h1>
           <p>
             <strong>Última actualización:</strong> noviembre 2025
@@ -111,7 +111,7 @@ const TermsPage = () => {
             <a href="mailto:contacto@relead.com.mx">contacto@relead.com.mx</a>
           </p>
 
-          <p className="text-gray-600">
+          <p className="text-slate-700">
             <em>Este texto tiene fines informativos y generales. No sustituye asesoría legal personalizada.</em>
           </p>
         </div>
