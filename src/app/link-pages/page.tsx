@@ -164,7 +164,7 @@ export default function LinkPagesScreen() {
   const [pages, setPages] = useState<LinkPageSummary[]>([]);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<LinkPageWithContent | null>(null);
-  const [profile, setProfile] = useState<ProfileRecord | null>(null);
+  const [designDraft, setDesignDraft] = useState<LinkPageDesign>(defaultDesign);
   const [loadingPages, setLoadingPages] = useState(false);
   const [loadingPage, setLoadingPage] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -576,6 +576,8 @@ export default function LinkPagesScreen() {
       setError(err.message || "Error al marcar página por defecto");
     }
   };
+
+  const pageForPreview = currentPage ? { ...currentPage, design: designDraft } : null;
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
