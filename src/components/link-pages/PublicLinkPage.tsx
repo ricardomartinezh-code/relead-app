@@ -13,7 +13,9 @@ import type { PublicLinkPage } from "@/lib/db/linkPagePublic";
 
 interface PublicLinkPageProps {
   page:
-    | ((LinkPageWithContent | PublicLinkPage) & { profile?: PublicLinkPage["profile"] })
+    | ((LinkPageWithContent | PublicLinkPage) & {
+        profile?: PublicLinkPage["profile"] | null;
+      })
     | null;
   variant?: "full" | "preview";
 }
@@ -251,7 +253,7 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
 
 function renderSocialBlock(
   block: LinkBlockWithItems,
-  profile: PublicLinkPage["profile"] | undefined,
+  profile: PublicLinkPage["profile"] | null | undefined,
   _design: LinkPageDesign | null
 ) {
   const config = block.config || {};
