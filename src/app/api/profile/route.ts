@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   }
 }
 
-export async function POST(req: Request) {
+export async function PUT(req: Request) {
   const session = await getSession();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
