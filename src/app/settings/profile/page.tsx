@@ -152,6 +152,7 @@ export default function ProfileSettingsPage() {
           <div className="grid gap-4 md:grid-cols-[160px,1fr]">
             <div className="flex flex-col items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
               {profileForm.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={profileForm.avatarUrl}
                   alt="Avatar"
