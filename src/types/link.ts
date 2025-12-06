@@ -1,15 +1,37 @@
+export interface LinkPageBackground {
+  type?: "solid" | "gradient" | "image";
+  solidColor?: string;
+  gradientFrom?: string;
+  gradientTo?: string;
+  gradientAngle?: number;
+  imageUrl?: string;
+  imageOpacity?: number;
+  overlayColor?: string;
+  overlayOpacity?: number;
+}
+
+export interface LinkPageTypography {
+  headingSize?: "sm" | "md" | "lg";
+  bodySize?: "sm" | "md" | "lg";
+  fontFamily?: "system" | "sans" | "serif" | "mono";
+}
+
 export interface LinkPageDesign {
-  backgroundColor?: string;
+  background?: LinkPageBackground;
+
   buttonBg?: string;
   buttonText?: string;
   textColor?: string;
   accentColor?: string;
+
   header?: {
     template?: "classic" | "minimal";
     useProfileAvatar?: boolean;
     useProfileName?: boolean;
     useProfileBio?: boolean;
   };
+
+  typography?: LinkPageTypography;
 }
 
 export interface LinkItem {
@@ -38,6 +60,15 @@ export interface LinkBlockWithItems {
   createdAt: string;
   updatedAt: string;
   items: LinkItem[];
+}
+
+export interface BlockStyleConfig {
+  variant?: "default" | "soft" | "solid" | "outline";
+  emphasis?: "low" | "normal" | "high";
+  corner?: "md" | "lg" | "xl" | "pill";
+  bgColor?: string;
+  textColor?: string;
+  borderColor?: string;
 }
 
 export interface LinkPageWithContent {
