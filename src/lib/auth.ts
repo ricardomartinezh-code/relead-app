@@ -38,3 +38,16 @@ export const authOptions: NextAuthOptions = {
 };
 
 export const getSession = () => getServerSession(authOptions);
+
+export async function getCurrentUser() {
+  const session = await getSession();
+  const user = session?.user as { id?: string; email?: string | null; name?: string | null } | undefined;
+
+  if (!user?.id) return null;
+
+  return {
+    id: user.id,
+    email: user.email ?? null,
+    name: user.name ?? null,
+  };
+}
