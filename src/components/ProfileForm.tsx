@@ -1,12 +1,53 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import type { ChangeEvent } from "react";
 import { type ProfileRecord } from "@/lib/db";
 
-export function ProfileForm({ profile }: { profile: ProfileRecord }) {
+type ProfileFormProps = {
+  profile: ProfileRecord;
+};
+
+export function ProfileForm({ profile }: ProfileFormProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl || "");
+
+  // Maneja la subida del archivo y guarda la URL devuelta por el backend
+  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+    setMessage(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("/api/upload-avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "No se pudo subir la imagen");
+      }
+
+      const data: { url: string } = await response.json();
+      setAvatarUrl(data.url);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error subiendo imagen";
+      setUploadError(message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -15,14 +56,14 @@ export function ProfileForm({ profile }: { profile: ProfileRecord }) {
     setMessage(null);
     const form = new FormData(e.currentTarget);
     const res = await fetch("/api/profile", {
-      method: "POST",
+      method: "PUT",
       body: JSON.stringify({
         title: form.get("title"),
         bio: form.get("bio") || null,
-        avatarUrl: form.get("avatarUrl") || null,
+        avatarUrl: avatarUrl || null,
         theme: form.get("theme") || "default",
       }),
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json; charset=utf-8" },
     });
     setLoading(false);
     if (!res.ok) {
@@ -52,14 +93,24 @@ export function ProfileForm({ profile }: { profile: ProfileRecord }) {
           placeholder="Comparte en qué te enfocas o a quién ayudas."
         />
       </div>
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-slate-800">Avatar URL</label>
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-slate-800">Avatar</label>
         <input
-          name="avatarUrl"
-          defaultValue={profile.avatarUrl || ""}
+          type="file"
+          name="avatar"
+          accept="image/*"
+          onChange={handleAvatarChange}
           className={inputClassName}
-          placeholder="https://... tu foto o logo"
         />
+        {uploading && <p className="text-xs text-slate-600">Subiendo imagen...</p>}
+        {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
+        {avatarUrl && (
+          <div className="flex items-center gap-2">
+            {/* Vista previa de la imagen subida */}
+            <img src={avatarUrl} alt="Avatar" className="h-12 w-12 rounded-full object-cover" />
+            <p className="text-xs text-slate-600 break-all">{avatarUrl}</p>
+          </div>
+        )}
       </div>
       <div className="space-y-1">
         <label className="text-sm font-medium text-slate-800">Tema</label>
