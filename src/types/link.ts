@@ -1,3 +1,17 @@
+export interface LinkPageDesign {
+  backgroundColor?: string;
+  buttonBg?: string;
+  buttonText?: string;
+  textColor?: string;
+  accentColor?: string;
+  header?: {
+    template?: "classic" | "minimal";
+    useProfileAvatar?: boolean;
+    useProfileName?: boolean;
+    useProfileBio?: boolean;
+  };
+}
+
 export interface LinkItem {
   id: string;
   blockId: string;
@@ -35,7 +49,7 @@ export interface LinkPageWithContent {
   publicDescription: string | null;
   isDefault: boolean;
   isPublished: boolean;
-  design: any;
+  design: LinkPageDesign | null;
   createdAt: string;
   updatedAt: string;
   blocks: LinkBlockWithItems[];
@@ -50,7 +64,7 @@ export interface LinkPageSummary {
   publicDescription: string | null;
   isDefault: boolean;
   isPublished: boolean;
-  design: any;
+  design: LinkPageDesign | null;
   createdAt: string;
   updatedAt: string;
 }

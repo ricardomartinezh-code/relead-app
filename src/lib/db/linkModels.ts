@@ -1,3 +1,5 @@
+import type { LinkPageDesign } from "@/types/link";
+
 export interface LinkPage {
   id: string;
   userId: string;
@@ -7,7 +9,7 @@ export interface LinkPage {
   publicDescription: string | null;
   isDefault: boolean;
   isPublished: boolean;
-  design: any;
+  design: LinkPageDesign | null;
   createdAt: string;
   updatedAt: string;
 }
