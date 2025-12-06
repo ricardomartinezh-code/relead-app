@@ -506,6 +506,12 @@ export default function LinkPagesScreen() {
       setError(null);
       setPageFormError(null);
 
+      if (pages.length >= 5) {
+        setPageFormError("Límite de 5 páginas alcanzado. Elimina alguna antes de crear otra.");
+        setCreating(false);
+        return;
+      }
+
       const internalName = pageForm.internalName.trim();
       const slugInput = pageForm.slug.trim();
       if (!internalName) {
@@ -798,6 +804,23 @@ export default function LinkPagesScreen() {
     }
   };
 
+  const handleDeleteBlock = async (blockId: string) => {
+    if (!currentPage) return;
+    const confirmed = window.confirm("¿Eliminar este bloque? No se puede deshacer.");
+    if (!confirmed) return;
+
+    try {
+      setError(null);
+      setCurrentPage((prev) =>
+        prev ? { ...prev, blocks: prev.blocks.filter((b) => b.id !== blockId) } : prev
+      );
+      await fetch(`/api/link-blocks/${blockId}`, { method: "DELETE" });
+      await reloadCurrentPage();
+    } catch (err: any) {
+      setError(err.message || "Error eliminando bloque");
+    }
+  };
+
   const handleSetDefault = async (pageId: string) => {
     try {
       setError(null);
@@ -826,6 +849,35 @@ export default function LinkPagesScreen() {
       );
     } catch (err: any) {
       setError(err.message || "Error al marcar página por defecto");
+    }
+  };
+
+  const handleDeletePage = async (pageId: string) => {
+    const page = pages.find((p) => p.id === pageId);
+    if (!page) return;
+    if (pages.length <= 1) {
+      setError("No puedes eliminar tu única página. Crea otra antes de borrar esta.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `¿Eliminar la página "${page.internalName}"? Esta acción es permanente.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setError(null);
+      await fetch(`/api/link-pages/${pageId}`, { method: "DELETE" });
+      setPages((prev) => prev.filter((p) => p.id !== pageId));
+
+      setSelectedPageId((prev) => {
+        if (prev !== pageId) return prev;
+        const remaining = pages.filter((p) => p.id !== pageId);
+        return remaining[0]?.id ?? null;
+      });
+      setCurrentPage((prev) => (prev?.id === pageId ? null : prev));
+      setDesignDraft(defaultDesign);
+    } catch (err: any) {
+      setError(err.message || "Error eliminando página");
     }
   };
 
@@ -951,6 +1003,13 @@ export default function LinkPagesScreen() {
                   Hacer default
                 </button>
               )}
+              <button
+                onClick={() => handleDeletePage(page.id)}
+                className="rounded-full px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50"
+                title="Eliminar página"
+              >
+                Eliminar
+              </button>
             </div>
           ))
         )}
@@ -1094,6 +1153,14 @@ export default function LinkPagesScreen() {
                             ↓
                           </button>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBlock(block.id)}
+                          className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100"
+                          title="Eliminar bloque"
+                        >
+                          Eliminar
+                        </button>
                       </div>
                     </div>
 
@@ -1319,7 +1386,7 @@ export default function LinkPagesScreen() {
                           </select>
                         </label>
                         <p className="text-[11px] text-slate-500">
-                          Las redes se toman del perfil (/dashboard/settings/profile).
+                          Las redes se toman del perfil (/dashboard/profile).
                         </p>
                         <div className="flex justify-end">
                           <button

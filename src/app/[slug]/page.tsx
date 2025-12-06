@@ -1,5 +1,7 @@
 import { LinkButtons } from "@/components/PublicLinks";
+import PublicLinkPage from "@/components/link-pages/PublicLinkPage";
 import { getProfileBySlug, getLinksByProfileId, recordPageView } from "@/lib/db";
+import { getDefaultPublicLinkPageByUserId } from "@/lib/db/linkPagePublic";
 import { headers } from "next/headers";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -15,6 +17,8 @@ export default async function PublicProfilePage({ params }: { params: { slug: st
   const profile = await getProfileBySlug(params.slug);
   if (!profile) return notFound();
 
+  const defaultLinkPage = await getDefaultPublicLinkPageByUserId(profile.userId);
+
   const links = await getLinksByProfileId(profile.id);
   const activeLinks = links.filter(l => l.isActive);
 
@@ -25,6 +29,12 @@ export default async function PublicProfilePage({ params }: { params: { slug: st
   await recordPageView(profile.id, referrer, userAgent, ip);
 
   const initials = getInitials(profile.title || "ReLead");
+
+  if (defaultLinkPage) {
+    return (
+      <PublicLinkPage page={defaultLinkPage} variant="full" />
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 bg-gradient-to-b from-slate-900 to-slate-950 text-slate-50">
