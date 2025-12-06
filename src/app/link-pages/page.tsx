@@ -9,6 +9,7 @@ import type {
   LinkPageDesign,
 } from "@/types/link";
 import type { ProfileRecord } from "@/lib/db";
+import type { PublicLinkPage as PublicLinkPageType } from "@/lib/db/linkPagePublic";
 import PublicLinkPage from "@/components/link-pages/PublicLinkPage";
 
 interface ApiListPagesResponse {
@@ -88,6 +89,21 @@ const defaultBlockConfigs: Record<string, any> = {
     label: null,
   },
 };
+
+type PublicProfile = PublicLinkPageType["profile"];
+
+function mapProfile(profile: ProfileRecord | null): PublicProfile | null {
+  if (!profile) return null;
+
+  return {
+    username: profile.slug ?? null,
+    name: profile.title ?? null,
+    bio: profile.bio ?? null,
+    avatarUrl: profile.avatarUrl ?? null,
+    socialLinks: [],
+    settings: undefined,
+  };
+}
 
 function DesignControls({
   design,
@@ -828,9 +844,10 @@ export default function LinkPagesScreen() {
     }
   };
 
-  const pageForPreview = currentPage
-    ? { ...currentPage, design: designDraft, profile }
-    : null;
+  const pageForPreview: ((LinkPageWithContent & { profile?: PublicProfile | null }) | null) =
+    currentPage
+      ? { ...currentPage, design: designDraft, profile: mapProfile(profile) }
+      : null;
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
