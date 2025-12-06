@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     { lang: "es" },
     React.createElement(
       "body",
-      { className: "min-h-screen bg-gray-50 text-gray-900" },
+      { className: "min-h-screen bg-slate-50 text-slate-900" },
       React.createElement(
         MetaSdkProvider,
         null,

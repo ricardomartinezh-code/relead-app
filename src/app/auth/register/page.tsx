@@ -94,13 +94,13 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-blue-50 to-white px-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow">
-        <h1 className="mb-2 text-2xl font-semibold">Crear cuenta</h1>
-        <p className="mb-6 text-sm text-gray-600">Regístrate para empezar a compartir tus links.</p>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-white px-4">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg ring-1 ring-slate-200">
+        <h1 className="mb-2 text-2xl font-bold text-slate-900">Crear cuenta</h1>
+        <p className="mb-6 text-sm text-slate-600">Regístrate para empezar a compartir tus links.</p>
 
         {successSlug && (
-          <div className="mb-4 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
             <p className="font-medium">¡Cuenta creada correctamente!</p>
             <p className="mt-1">
               Tu perfil público está disponible en {""}
@@ -111,17 +111,17 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium">Nombre</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Nombre</label>
             <input
               name="name"
               placeholder="Tu nombre"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Email</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
             <input
               name="email"
               type="email"
@@ -129,11 +129,11 @@ export default function RegisterPage() {
               required
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Nombre de usuario</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Nombre de usuario</label>
             <input
               name="username"
               placeholder="tu-usuario"
@@ -149,22 +149,22 @@ export default function RegisterPage() {
               onBlur={() => checkUsernameAvailability(form.username)}
               pattern="^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])?$"
               title={USERNAME_RULES_MESSAGE}
-              className={`mt-1 w-full rounded-md border px-3 py-2 text-sm ${
+              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
                 usernameStatus === "available"
-                  ? "border-green-500 focus:border-green-600"
+                  ? "border-emerald-500 focus:border-emerald-600 focus:ring-emerald-200"
                   : usernameStatus === "unavailable"
-                    ? "border-red-500 focus:border-red-600"
-                    : "border-gray-300"
+                    ? "border-red-500 focus:border-red-600 focus:ring-red-200"
+                    : "border-slate-200 focus:border-slate-400 focus:ring-slate-200"
               }`}
             />
-            <p className="mt-1 text-xs text-gray-500">{USERNAME_RULES_MESSAGE}</p>
+            <p className="mt-1 text-xs text-slate-600">{USERNAME_RULES_MESSAGE}</p>
             {usernameMessage && (
               <p
                 className={`mt-1 text-sm ${
                   usernameStatus === "available"
-                    ? "text-green-700"
+                    ? "text-emerald-700"
                     : usernameStatus === "checking"
-                      ? "text-gray-600"
+                      ? "text-slate-600"
                       : "text-red-600"
                 }`}
               >
@@ -173,7 +173,7 @@ export default function RegisterPage() {
             )}
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Contraseña</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Contraseña</label>
             <input
               name="password"
               type="password"
@@ -182,20 +182,20 @@ export default function RegisterPage() {
               required
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             type="submit"
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-70"
+            className="w-full rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-70"
             disabled={loading || usernameStatus === "checking"}
           >
             {loading ? "Creando..." : "Crear cuenta"}
           </button>
         </form>
-        <p className="mt-4 text-sm text-gray-600">
-          ¿Ya tienes cuenta? <a href="/auth/login" className="font-medium text-blue-600">Inicia sesión</a>
+        <p className="mt-4 text-sm text-slate-600">
+          ¿Ya tienes cuenta? <a href="/auth/login" className="font-medium text-slate-900 hover:underline">Inicia sesión</a>
         </p>
       </div>
     </div>

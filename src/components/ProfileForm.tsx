@@ -95,7 +95,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   };
 
   const inputClassName =
-    "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200";
+    "w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 transition";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -143,7 +143,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
       {message && <p className="text-sm text-emerald-600">{message}</p>}
       <button
         type="submit"
-        className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800 disabled:opacity-70"
+        className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
         disabled={loading}
       >
         {loading ? "Guardando..." : "Guardar cambios"}

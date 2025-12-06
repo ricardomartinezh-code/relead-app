@@ -5,7 +5,7 @@ const PrivacyPage = () => {
         <h1 className="text-3xl font-semibold mb-6">Política de privacidad</h1>
 
         <div className="prose prose-slate">
-          <p className="uppercase tracking-wide text-sm text-gray-500">Legal</p>
+          <p className="uppercase tracking-wide text-sm text-slate-600">Legal</p>
           <h1>Política de Privacidad — ReLead Digital</h1>
           <p>
             <strong>Última actualización:</strong> noviembre 2025
@@ -131,7 +131,7 @@ const PrivacyPage = () => {
             Para dudas relacionadas con privacidad, escribe a
             <a href="mailto:privacidad@relead.com.mx">privacidad@relead.com.mx</a>.
           </p>
-          <p className="text-gray-600">Este documento es de carácter informativo y no constituye asesoría legal. Consulta con un profesional para casos específicos.</p>
+          <p className="text-slate-700">Este documento es de carácter informativo y no constituye asesoría legal. Consulta con un profesional para casos específicos.</p>
         </div>
       </div>
     </main>
