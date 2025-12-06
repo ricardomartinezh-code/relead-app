@@ -1,12 +1,6 @@
 import { NextResponse } from "next/server";
-import { v2 as cloudinary } from "cloudinary";
 import type { UploadApiErrorResponse, UploadApiResponse } from "cloudinary";
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import cloudinary from "@/lib/cloudinary";
 
 async function uploadToCloudinary(buffer: Buffer): Promise<UploadApiResponse> {
   return new Promise((resolve, reject) => {
@@ -27,10 +21,6 @@ async function uploadToCloudinary(buffer: Buffer): Promise<UploadApiResponse> {
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-      return NextResponse.json({ error: "Cloudinary no está configurado" }, { status: 500 });
-    }
-
     const formData = await req.formData();
     const file = formData.get("file");
 

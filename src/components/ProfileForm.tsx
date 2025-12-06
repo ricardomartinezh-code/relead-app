@@ -16,10 +16,17 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl || "");
 
-  // Maneja la subida del archivo y guarda la URL devuelta por el backend
   const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+
+    if (!uploadPreset || !cloudName) {
+      setUploadError("Cloudinary no está configurado correctamente");
+      return;
+    }
 
     setUploading(true);
     setUploadError(null);
@@ -27,20 +34,42 @@ export function ProfileForm({ profile }: ProfileFormProps) {
 
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("upload_preset", uploadPreset);
 
     try {
-      const response = await fetch("/api/upload-avatar", {
+      const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: "POST",
         body: formData,
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "No se pudo subir la imagen");
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json().catch(() => ({}));
+        const errorMessage =
+          typeof errorData?.error?.message === "string"
+            ? errorData.error.message
+            : "No se pudo subir la imagen";
+        throw new Error(errorMessage);
       }
 
-      const data: { url: string } = await response.json();
-      setAvatarUrl(data.url);
+      const uploadData: { secure_url?: string } = await uploadResponse.json();
+      if (!uploadData.secure_url) {
+        throw new Error("No se pudo obtener la URL del avatar");
+      }
+
+      const saveResponse = await fetch("/api/profile/avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarUrl: uploadData.secure_url }),
+      });
+
+      if (!saveResponse.ok) {
+        const data = await saveResponse.json().catch(() => ({}));
+        const message = typeof data?.error === "string" ? data.error : "No se pudo guardar el avatar";
+        throw new Error(message);
+      }
+
+      setAvatarUrl(uploadData.secure_url);
+      setMessage("Avatar actualizado");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error subiendo imagen";
       setUploadError(message);
@@ -106,7 +135,6 @@ export function ProfileForm({ profile }: ProfileFormProps) {
         {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
         {avatarUrl && (
           <div className="flex items-center gap-2">
-            {/* Vista previa de la imagen subida */}
             <img src={avatarUrl} alt="Avatar" className="h-12 w-12 rounded-full object-cover" />
             <p className="text-xs text-slate-600 break-all">{avatarUrl}</p>
           </div>
