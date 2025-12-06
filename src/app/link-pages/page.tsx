@@ -8,7 +8,7 @@ import type {
   LinkItem,
   LinkPageDesign,
 } from "@/types/link";
-import { type ProfileRecord } from "@/lib/db";
+import type { ProfileRecord } from "@/lib/db";
 import PublicLinkPage from "@/components/link-pages/PublicLinkPage";
 
 interface ApiListPagesResponse {
@@ -205,8 +205,8 @@ export default function LinkPagesScreen() {
       try {
         const res = await fetch("/api/profile");
         if (!res.ok) return;
-        const data = await res.json();
-        const profileData = (data as { profile?: ProfileRecord }).profile || (data as ProfileRecord);
+        const data = (await res.json()) as { profile?: ProfileRecord } | ProfileRecord;
+        const profileData = "profile" in data ? data.profile || null : data;
         setProfile(profileData);
       } catch (err) {
         console.error("Error cargando perfil:", err);
