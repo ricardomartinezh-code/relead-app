@@ -6,7 +6,13 @@
  */
 
 const { Pool } = require('pg');
-require('dotenv').config();
+
+// Cargar .env si está disponible; no fallar si falta el paquete dotenv.
+try {
+  require('dotenv').config();
+} catch (err) {
+  console.warn('dotenv no está instalado; se continuará usando variables de entorno existentes.');
+}
 
 async function testConnection() {
   console.log('🔍 Probando conexión con la base de datos Neon...\n');
