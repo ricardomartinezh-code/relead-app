@@ -7,17 +7,19 @@ import {
   SignedOut,
   UserButton,
 } from "@clerk/nextjs";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const sans = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const mono = Roboto_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -33,7 +35,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <body className={`${sans.variable} ${mono.variable} antialiased`}>
           <header className="flex justify-end items-center p-4 gap-4 h-16">
             <SignedOut>
               <SignInButton />
