@@ -1,6 +1,10 @@
-import NextAuth from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextResponse } from "next/server";
 
-const handler = NextAuth(authOptions);
+function handler() {
+  return NextResponse.json(
+    { message: "La autenticación ahora usa Clerk. Usa /sign-in o /auth/login con Clerk." },
+    { status: 410 }
+  );
+}
 
 export { handler as GET, handler as POST };

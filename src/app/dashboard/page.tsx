@@ -24,7 +24,7 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardTitle className="text-xl">Inicia sesión para administrar tu panel</CardTitle>
             <CardDescription>
-              Usa tus credenciales para acceder o crea una cuenta nueva para empezar.
+              Accede con tu cuenta de Clerk o regístrate para empezar.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">

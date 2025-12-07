@@ -15,9 +15,12 @@ const { Pool } = require("pg");
 require("dotenv").config();
 
 const requiredEnv = [
-  // Auth
-  "NEXTAUTH_SECRET",
-  "NEXTAUTH_URL",
+  // Auth (Clerk)
+  "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+  "CLERK_SECRET_KEY",
+  "NEXT_PUBLIC_CLERK_FRONTEND_API",
+  "CLERK_API_URL",
+  "CLERK_JWKS_URL",
 
   // DB (Neon)
   "DATABASE_URL",
