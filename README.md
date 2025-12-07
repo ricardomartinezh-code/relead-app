@@ -1,6 +1,6 @@
 # ReLead
 
-ReLead es un servicio de "link in bio" construido con Next.js 14 (App Router), TypeScript, Tailwind CSS y NextAuth.
+ReLead es un servicio de "link in bio" construido con Next.js 14 (App Router), TypeScript, Tailwind CSS y Clerk para autenticación.
 
 ## Requisitos
 - Node.js 18+
@@ -8,7 +8,7 @@ ReLead es un servicio de "link in bio" construido con Next.js 14 (App Router), T
 ## Variables de entorno
 Copia `.env.example` a `.env` y completa:
 - `DATABASE_URL` (Neon o Postgres compatible)
-- `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
+- Clerk: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` (y las URLs de tu instancia)
 - Cloudinary: `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
 - Meta/WhatsApp (server): `META_APP_ID`, `META_APP_SECRET`, `META_REDIRECT_URI`
 - Meta/WhatsApp (client): `NEXT_PUBLIC_META_APP_ID`, `NEXT_PUBLIC_META_REDIRECT_URI`, `NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_CTWA`, `NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID_NO_CTWA`
@@ -41,7 +41,7 @@ Copia `.env.example` a `.env` y completa:
 4. Si `DATABASE_URL` no está definida, las migraciones automáticas se omiten y verás un warning en consola. El CLI `npm run db:migrate` es la alternativa manual.
 
 ## Flujos clave
-- Registro en `/auth/register` (crea usuario en memoria, hash de contraseña y perfil con slug único).
-- Login con NextAuth Credentials en `/auth/login`.
+- Registro con Clerk en `/auth/register` o `/sign-up`.
+- Login con Clerk en `/auth/login` o `/sign-in`.
 - Dashboard protegido en `/dashboard` para métricas y gestión de perfil/links.
 - Página pública en `/{slug}` con tracking de visitas y clics.

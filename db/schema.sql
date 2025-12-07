@@ -12,11 +12,17 @@ CREATE TABLE IF NOT EXISTS users (
   email text NOT NULL UNIQUE,
   username text UNIQUE,
   name text NOT NULL,
-  password text NOT NULL,
+  password text NULL,
+  clerk_id text UNIQUE,
   profile_id uuid,
   is_active boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Ajustes para Clerk: permitir password nulo y vincular clerk_id
+ALTER TABLE IF EXISTS users
+  ALTER COLUMN password DROP NOT NULL,
+  ADD COLUMN IF NOT EXISTS clerk_id text UNIQUE;
 
 -- Tabla de perfiles
 CREATE TABLE IF NOT EXISTS profiles (

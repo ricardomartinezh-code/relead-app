@@ -2,6 +2,7 @@ import { Pool, PoolClient } from "pg";
 import { compare, hashSync } from "bcrypt";
 import { randomUUID } from "crypto";
 import { ensureDatabaseSchema } from "./db/migrate";
+import { normalizeUsername } from "./username";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -16,9 +17,10 @@ export type UserRecord = {
   id: string;
   email: string;
   name: string;
-  password?: string;
+  password?: string | null;
   profileId?: string;
   username?: string;
+  clerkId?: string | null;
   created_at?: Date;
   is_active?: boolean;
 };
@@ -112,7 +114,7 @@ export async function getUserByEmail(email: string): Promise<UserRecord | null> 
   try {
     const normalizedEmail = normalizeEmail(email);
     const result = await pool.query(
-      "SELECT id, email, name, password, profile_id AS \"profileId\" FROM users WHERE email = $1 AND is_active = true",
+      "SELECT id, email, name, password, profile_id AS \"profileId\", username, clerk_id AS \"clerkId\" FROM users WHERE email = $1 AND is_active = true",
       [normalizedEmail]
     );
     return result.rows[0] || null;
@@ -129,7 +131,7 @@ export async function getUserByUsername(username: string): Promise<UserRecord | 
   try {
     const normalizedUsername = username.trim().toLowerCase();
     const result = await pool.query(
-      "SELECT id, email, name, password, profile_id AS \"profileId\" FROM users WHERE username = $1 AND is_active = true",
+      "SELECT id, email, name, password, profile_id AS \"profileId\", username, clerk_id AS \"clerkId\" FROM users WHERE username = $1 AND is_active = true",
       [normalizedUsername]
     );
     return result.rows[0] || null;
@@ -145,12 +147,25 @@ export async function getUserByUsername(username: string): Promise<UserRecord | 
 export async function getUserById(id: string): Promise<UserRecord | null> {
   try {
     const result = await pool.query(
-      "SELECT id, email, name, password, profile_id AS \"profileId\" FROM users WHERE id = $1 AND is_active = true",
+      "SELECT id, email, name, password, profile_id AS \"profileId\", username, clerk_id AS \"clerkId\" FROM users WHERE id = $1 AND is_active = true",
       [id]
     );
     return result.rows[0] || null;
   } catch (error) {
     console.error("Error obteniendo usuario por ID:", error);
+    throw error;
+  }
+}
+
+export async function getUserByClerkId(clerkId: string): Promise<UserRecord | null> {
+  try {
+    const result = await pool.query(
+      "SELECT id, email, name, password, profile_id AS \"profileId\", username, clerk_id AS \"clerkId\" FROM users WHERE clerk_id = $1 AND is_active = true",
+      [clerkId]
+    );
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error("Error obteniendo usuario por clerk_id:", error);
     throw error;
   }
 }
@@ -163,7 +178,8 @@ export async function createUser(
   name: string,
   password: string,
   username?: string,
-  slug?: string
+  slug?: string,
+  clerkId?: string
 ): Promise<UserRecord & { slug: string; username: string }> {
   const normalizedEmail = normalizeEmail(email);
   const client = await pool.connect();
@@ -178,10 +194,10 @@ export async function createUser(
 
     // Crear usuario
     const userResult = await client.query(
-      `INSERT INTO users (id, email, name, password, username, profile_id, is_active, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, true, CURRENT_TIMESTAMP)
-       RETURNING id, email, name, profile_id AS "profileId"`,
-      [userId, normalizedEmail, name, hashedPassword, usernameToUse, profileId]
+      `INSERT INTO users (id, email, name, password, username, profile_id, clerk_id, is_active, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, true, CURRENT_TIMESTAMP)
+       RETURNING id, email, name, profile_id AS "profileId", clerk_id AS "clerkId"`,
+      [userId, normalizedEmail, name, hashedPassword, usernameToUse, profileId, clerkId ?? null]
     );
 
     // Crear perfil básico
@@ -228,6 +244,115 @@ export async function verifyCredentials(email: string, password: string): Promis
   } catch (error) {
     console.error("Error verificando credenciales:", error);
     throw error;
+  }
+}
+
+export async function ensureUserForClerk({
+  clerkUserId,
+  email,
+  name,
+  username,
+}: {
+  clerkUserId: string;
+  email?: string | null;
+  name?: string | null;
+  username?: string | null;
+}): Promise<UserRecord> {
+  const normalizedEmail = email ? normalizeEmail(email) : null;
+  const normalizedUsername =
+    username && username.trim()
+      ? normalizeUsername(username)
+      : normalizedEmail
+        ? normalizeUsername(normalizedEmail.split("@")[0] ?? "")
+        : null;
+
+  const client: PoolClient = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    let user: UserRecord | null = null;
+
+    const byClerk = await client.query(
+      `SELECT id, email, name, password, profile_id AS "profileId", username, clerk_id AS "clerkId"
+       FROM users WHERE clerk_id = $1 AND is_active = true LIMIT 1`,
+      [clerkUserId]
+    );
+    user = byClerk.rows[0] ?? null;
+
+    if (!user && normalizedEmail) {
+      const byEmail = await client.query(
+        `SELECT id, email, name, password, profile_id AS "profileId", username, clerk_id AS "clerkId"
+         FROM users WHERE email = $1 AND is_active = true LIMIT 1`,
+        [normalizedEmail]
+      );
+
+      if (byEmail.rows[0]) {
+        user = byEmail.rows[0];
+        await client.query(
+          `UPDATE users SET clerk_id = $1, password = NULL WHERE id = $2`,
+          [clerkUserId, user.id]
+        );
+        user.clerkId = clerkUserId;
+        user.password = null;
+      }
+    }
+
+    if (!user) {
+      const userId = randomUUID();
+      const profileId = randomUUID();
+      const fallbackEmail = normalizedEmail ?? `${clerkUserId}@clerk.local`;
+      const baseUsername =
+        normalizedUsername || (normalizedEmail ? normalizedEmail.split("@")[0] : `user-${clerkUserId.slice(-6)}`);
+      const uniqueSlug = await generateUniqueSlug(baseUsername || `user-${clerkUserId.slice(-6)}`);
+      const usernameToUse = baseUsername || uniqueSlug;
+      const displayName = name || normalizedEmail || usernameToUse;
+
+      const created = await client.query(
+        `INSERT INTO users (id, email, name, password, username, profile_id, clerk_id, is_active, created_at)
+         VALUES ($1, $2, $3, NULL, $4, $5, $6, true, CURRENT_TIMESTAMP)
+         RETURNING id, email, name, password, profile_id AS "profileId", username, clerk_id AS "clerkId"`,
+        [userId, fallbackEmail, displayName, usernameToUse, profileId, clerkUserId]
+      );
+
+      await client.query(
+        `INSERT INTO profiles (id, user_id, title, slug, theme)
+         VALUES ($1, $2, $3, $4, 'default')
+         ON CONFLICT (id) DO NOTHING`,
+        [profileId, userId, displayName, uniqueSlug]
+      );
+
+      user = created.rows[0];
+    }
+
+    let profileId = user.profileId;
+    if (!profileId) {
+      profileId = randomUUID();
+      const baseSlug =
+        user.username ||
+        normalizedUsername ||
+        (normalizedEmail ? normalizedEmail.split("@")[0] : `user-${clerkUserId.slice(-6)}`);
+      const slug = await generateUniqueSlug(baseSlug || `user-${clerkUserId.slice(-6)}`);
+
+      await client.query(
+        `INSERT INTO profiles (id, user_id, title, slug, theme)
+         VALUES ($1, $2, $3, $4, 'default')
+         ON CONFLICT (id) DO NOTHING`,
+        [profileId, user.id, user.name ?? name ?? "Perfil", slug]
+      );
+
+      await client.query(`UPDATE users SET profile_id = $1 WHERE id = $2`, [profileId, user.id]);
+      user.profileId = profileId;
+    }
+
+    await client.query("COMMIT");
+    return { ...user, profileId, clerkId: user.clerkId ?? clerkUserId };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error asegurando usuario Clerk:", error);
+    throw error;
+  } finally {
+    client.release();
   }
 }
 

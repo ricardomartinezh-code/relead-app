@@ -1,57 +1,43 @@
-import { getServerSession, type NextAuthOptions } from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import { verifyCredentials } from "./db";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { ensureUserForClerk } from "./db";
 
-export const authOptions: NextAuthOptions = {
-  session: { strategy: "jwt" },
-  secret: process.env.NEXTAUTH_SECRET,
-  providers: [
-    Credentials({
-      name: "Credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Contraseña", type: "password" }
-      },
-      async authorize(credentials) {
-        const email = credentials?.email?.toString().trim().toLowerCase();
-        const password = credentials?.password?.toString();
-
-        if (!email || !password) return null;
-
-        const user = await verifyCredentials(email, password);
-        if (!user) return null;
-        return { id: user.id, email: user.email, name: user.name };
-      }
-    })
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user?.id) token.sub = user.id;
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user && token.sub) {
-        (session.user as { id?: string }).id = token.sub;
-      }
-      return session;
-    }
-  },
-  pages: {
-    signIn: "/auth/login"
-  }
+export type AppUser = {
+  id: string;
+  clerkId: string;
+  email: string | null;
+  name: string | null;
+  profileId?: string | null;
 };
 
-export const getSession = () => getServerSession(authOptions);
+export async function getCurrentUser(): Promise<AppUser | null> {
+  const { userId } = auth();
+  if (!userId) return null;
 
-export async function getCurrentUser() {
-  const session = await getSession();
-  const user = session?.user as { id?: string; email?: string | null; name?: string | null } | undefined;
+  const clerkUser = await currentUser();
+  const email =
+    clerkUser?.primaryEmailAddress?.emailAddress ||
+    clerkUser?.emailAddresses?.[0]?.emailAddress ||
+    null;
+  const name = clerkUser?.fullName || clerkUser?.username || email || null;
+  const username = clerkUser?.username || (email ? email.split("@")[0] : null);
 
-  if (!user?.id) return null;
+  const dbUser = await ensureUserForClerk({
+    clerkUserId: userId,
+    email,
+    name,
+    username,
+  });
 
   return {
-    id: user.id,
-    email: user.email ?? null,
-    name: user.name ?? null,
+    id: dbUser.id,
+    clerkId: userId,
+    email: dbUser.email ?? email ?? null,
+    name: dbUser.name ?? name ?? null,
+    profileId: dbUser.profileId ?? null,
   };
+}
+
+export async function getSession() {
+  const user = await getCurrentUser();
+  return user ? { user } : null;
 }

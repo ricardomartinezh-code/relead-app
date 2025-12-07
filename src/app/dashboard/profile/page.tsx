@@ -14,7 +14,7 @@ export default async function ProfilePage() {
       <DashboardLayout>
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <h1 className="text-xl font-semibold text-slate-900">Inicia sesión para administrar tu panel.</h1>
-          <p className="mt-2 text-sm text-slate-600">Accede con tus credenciales o crea una cuenta nueva.</p>
+          <p className="mt-2 text-sm text-slate-600">Accede con tu cuenta de Clerk o crea una nueva.</p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Button asChild>
               <Link href="/auth/login">Iniciar sesión</Link>
