@@ -13,6 +13,7 @@
     "db:verify-structure": "node scripts/verify-db-structure.js"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.36.0",
     "@neondatabase/serverless": "^1.0.2",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-select": "^2.2.6",
