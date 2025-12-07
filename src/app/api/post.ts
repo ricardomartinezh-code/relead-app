@@ -31,8 +31,6 @@ async function handler(req: Request) {
 
 export default handler;
 
-export default handler;
-
 export const config = {
   runtime: 'edge',
   regions: ['iad1'],  // specify the region nearest your Neon DB
