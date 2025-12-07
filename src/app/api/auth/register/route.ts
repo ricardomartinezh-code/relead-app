@@ -11,6 +11,7 @@ import { USERNAME_RULES_MESSAGE, validateUsernameInput } from "@/lib/username";
 export async function POST(req: Request) {
   try {
     const { name, email, password, username } = await req.json();
+    const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
 
     const usernameValidation = validateUsernameInput(username);
     if (!usernameValidation.valid || !usernameValidation.normalized) {
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return NextResponse.json(
         { message: "Email y contraseña son obligatorios." },
         { status: 400 }
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
     }
 
     // Verificar si el email ya existe
-    const existingUser = await getUserByEmail(email);
+    const existingUser = await getUserByEmail(normalizedEmail);
     if (existingUser) {
       return NextResponse.json(
         { message: "Ya existe una cuenta con ese correo." },
@@ -66,8 +67,8 @@ export async function POST(req: Request) {
     }
 
     const newUser = await createUser(
-      email,
-      name || email,
+      normalizedEmail,
+      name || normalizedEmail,
       password,
       usernameValidation.normalized,
       usernameValidation.normalized

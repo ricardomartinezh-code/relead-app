@@ -75,27 +75,34 @@ export default function RegisterPage() {
       return;
     }
 
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      body: JSON.stringify({
-        name: form.name,
-        email: form.email,
-        password: form.password,
-        username: usernameToSend,
-      }),
-      headers: { "Content-Type": "application/json" },
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (!res.ok) {
-      setError(data.message || "No se pudo crear la cuenta.");
-      return;
-    }
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          username: usernameToSend,
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
 
-    setForm({ name: "", email: "", password: "", username: "" });
-    setUsernameStatus("idle");
-    setUsernameMessage(null);
-    setSuccessSlug(data.slug || null);
+      if (!res.ok) {
+        setError(data.message || "No se pudo crear la cuenta.");
+        return;
+      }
+
+      setForm({ name: "", email: "", password: "", username: "" });
+      setUsernameStatus("idle");
+      setUsernameMessage(null);
+      setSuccessSlug(data.slug || null);
+    } catch (err) {
+      console.error("Register error", err);
+      setError("No se pudo crear la cuenta. Intenta más tarde.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -129,6 +136,7 @@ export default function RegisterPage() {
                 placeholder="Tu nombre"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
+                autoComplete="name"
               />
             </div>
             <div className="space-y-2">
@@ -141,6 +149,7 @@ export default function RegisterPage() {
                 required
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -168,6 +177,7 @@ export default function RegisterPage() {
                       ? "border-red-500 focus-visible:ring-red-200"
                       : ""
                 }`}
+                autoComplete="username"
               />
               <p className="text-xs text-slate-600">{USERNAME_RULES_MESSAGE}</p>
               {usernameMessage && (
@@ -195,6 +205,7 @@ export default function RegisterPage() {
                 required
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
+                autoComplete="new-password"
               />
             </div>
             {error && (

@@ -20,18 +20,24 @@ export default function LoginForm() {
     setError(null);
     setLoading(true);
     const form = new FormData(e.currentTarget);
-    const res = await signIn("credentials", {
-      email: form.get("email"),
-      password: form.get("password"),
-      redirect: false,
-      callbackUrl: searchParams.get("callbackUrl") || "/dashboard",
-    });
-    setLoading(false);
-    if (res?.error) {
-      setError("Credenciales inválidas");
-      return;
+    try {
+      const res = await signIn("credentials", {
+        email: form.get("email"),
+        password: form.get("password"),
+        redirect: false,
+        callbackUrl: searchParams.get("callbackUrl") || "/dashboard",
+      });
+      if (res?.error) {
+        setError("Credenciales inválidas");
+        return;
+      }
+      router.push(res?.url || "/dashboard");
+    } catch (err) {
+      console.error("Login error", err);
+      setError("No se pudo iniciar sesión. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
     }
-    router.push(res?.url || "/dashboard");
   };
 
   return (
@@ -45,11 +51,25 @@ export default function LoginForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" placeholder="tu@email.com" required />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="tu@email.com"
+                autoComplete="email"
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
-              <Input id="password" name="password" type="password" placeholder="******" required />
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="******"
+                autoComplete="current-password"
+                required
+              />
             </div>
             {error && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

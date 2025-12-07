@@ -139,6 +139,47 @@ export default async function DashboardPage() {
               </CardContent>
             </Card>
           </div>
+
+          <div className="flex flex-col justify-between rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div className="space-y-2">
+              <h2 className="text-lg font-semibold text-slate-900">Páginas</h2>
+              <p className="text-sm text-slate-600">
+                Construye y ordena tus páginas link-in-bio con bloques, diseño y enlaces.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/link-pages"
+              className="mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
+            >
+              Abrir editor
+            </Link>
+          </div>
+
+          <div className="flex flex-col justify-between rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div className="space-y-2">
+              <h2 className="text-lg font-semibold text-slate-900">Legal</h2>
+              <p className="text-sm text-slate-600">Consulta privacidad y términos directamente desde el panel.</p>
+            </div>
+            <Link
+              href="/dashboard/legal"
+              className="mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
+            >
+              Ver documentos
+            </Link>
+          </div>
+
+          <div className="flex flex-col justify-between rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div className="space-y-2">
+              <h2 className="text-lg font-semibold text-slate-900">Ajustes</h2>
+              <p className="text-sm text-slate-600">Administra el username, avatar y enlaces sociales de tu perfil.</p>
+            </div>
+            <Link
+              href="/dashboard/settings/profile"
+              className="mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
+            >
+              Ajustar perfil
+            </Link>
+          </div>
         </div>
       </div>
     </DashboardLayout>

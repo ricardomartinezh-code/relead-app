@@ -35,7 +35,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
     formData.append("file", file);
 
     try {
-      const uploadResponse = await fetch("/api/upload-avatar", {
+      const uploadResponse = await fetch("/api/upload/avatar", {
         method: "POST",
         body: formData,
       });
