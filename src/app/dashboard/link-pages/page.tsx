@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import type {
   LinkPageSummary,
@@ -11,6 +12,7 @@ import type {
 } from "@/types/link";
 import type { ProfileRecord } from "@/lib/db";
 import PublicLinkPage from "@/components/link-pages/PublicLinkPage";
+import { Button } from "@/components/ui/button";
 
 interface ApiListPagesResponse {
   pages: LinkPageSummary[];
@@ -126,7 +128,7 @@ function DesignControls({
           type="button"
           onClick={onSave}
           disabled={disabled}
-          className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          className="rounded-md bg-slate-900 px-3 py-1 text-xs font-medium text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
         >
           Guardar diseño
         </button>
@@ -379,6 +381,7 @@ function DesignControls({
 
 export default function LinkPagesScreen() {
   const [pages, setPages] = useState<LinkPageSummary[]>([]);
+  const [initialized, setInitialized] = useState(false);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<LinkPageWithContent | null>(null);
   const [designDraft, setDesignDraft] = useState<LinkPageDesign>(defaultDesign);
@@ -409,10 +412,11 @@ export default function LinkPagesScreen() {
         }
         const data: ApiListPagesResponse = await res.json();
         setPages(data.pages || []);
-        if (!selectedPageId && data.pages.length > 0) {
+        if (!initialized && !selectedPageId && data.pages.length > 0) {
           const defaultPage = data.pages.find((p) => p.isDefault) || data.pages[0];
           setSelectedPageId(defaultPage.id);
         }
+        if (!initialized) setInitialized(true);
       } catch (err: any) {
         setError(err.message || "Error cargando páginas");
       } finally {
@@ -421,7 +425,7 @@ export default function LinkPagesScreen() {
     };
 
     loadPages();
-  }, [selectedPageId]);
+  }, [selectedPageId, initialized]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -505,6 +509,12 @@ export default function LinkPagesScreen() {
       setCreating(true);
       setError(null);
       setPageFormError(null);
+
+      if (pages.length >= 5) {
+        setPageFormError("Límite de 5 páginas alcanzado. Elimina alguna antes de crear otra.");
+        setCreating(false);
+        return;
+      }
 
       const internalName = pageForm.internalName.trim();
       const slugInput = pageForm.slug.trim();
@@ -798,6 +808,23 @@ export default function LinkPagesScreen() {
     }
   };
 
+  const handleDeleteBlock = async (blockId: string) => {
+    if (!currentPage) return;
+    const confirmed = window.confirm("¿Eliminar este bloque? No se puede deshacer.");
+    if (!confirmed) return;
+
+    try {
+      setError(null);
+      setCurrentPage((prev) =>
+        prev ? { ...prev, blocks: prev.blocks.filter((b) => b.id !== blockId) } : prev
+      );
+      await fetch(`/api/link-blocks/${blockId}`, { method: "DELETE" });
+      await reloadCurrentPage();
+    } catch (err: any) {
+      setError(err.message || "Error eliminando bloque");
+    }
+  };
+
   const handleSetDefault = async (pageId: string) => {
     try {
       setError(null);
@@ -826,6 +853,35 @@ export default function LinkPagesScreen() {
       );
     } catch (err: any) {
       setError(err.message || "Error al marcar página por defecto");
+    }
+  };
+
+  const handleDeletePage = async (pageId: string) => {
+    const page = pages.find((p) => p.id === pageId);
+    if (!page) return;
+    if (pages.length <= 1) {
+      setError("No puedes eliminar tu única página. Crea otra antes de borrar esta.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `¿Eliminar la página "${page.internalName}"? Esta acción es permanente.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setError(null);
+      await fetch(`/api/link-pages/${pageId}`, { method: "DELETE" });
+      setPages((prev) => prev.filter((p) => p.id !== pageId));
+
+      setSelectedPageId((prev) => {
+        if (prev !== pageId) return prev;
+        const remaining = pages.filter((p) => p.id !== pageId);
+        return remaining[0]?.id ?? null;
+      });
+      setCurrentPage((prev) => (prev?.id === pageId ? null : prev));
+      setDesignDraft(defaultDesign);
+    } catch (err: any) {
+      setError(err.message || "Error eliminando página");
     }
   };
 
@@ -862,6 +918,72 @@ export default function LinkPagesScreen() {
         </div>
       </header>
 
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Accesos rápidos</p>
+            <p className="text-xs text-slate-600">Visita o abre en el editor cualquiera de tus páginas.</p>
+          </div>
+          <Button
+            type="button"
+            onClick={() => {
+              setInitialized(true);
+              setSelectedPageId(null);
+              setPageForm({ internalName: "", slug: "" });
+              setPageSlugEdited(false);
+            }}
+          >
+            Crear nueva
+          </Button>
+        </div>
+        <div className="mt-3 space-y-2">
+          {loadingPages ? (
+            <p className="text-sm text-slate-500">Cargando páginas…</p>
+          ) : pages.length === 0 ? (
+            <p className="text-sm text-slate-500">Aún no tienes páginas. Crea la primera.</p>
+          ) : (
+            pages.map((page) => (
+              <div
+                key={page.id}
+                className="flex flex-col gap-2 rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm text-slate-800 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{page.internalName}</span>
+                    {page.isDefault && (
+                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                        Default
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                    <span>/{page.slug}</span>
+                    {page.isPublished && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">Publicado</span>}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setSelectedPageId(page.id)}>
+                    Abrir en el editor
+                  </Button>
+                  <Button asChild variant="secondary" size="sm">
+                    <Link href={`/${page.slug}`} target="_blank">
+                      Ver página pública
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDeletePage(page.id)}
+                  >
+                    Eliminar
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
       <form
         onSubmit={handleCreatePage}
         className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:grid-cols-[1.5fr,1.5fr,auto]"
@@ -897,13 +1019,9 @@ export default function LinkPagesScreen() {
           />
         </label>
         <div className="flex items-end justify-end">
-          <button
-            type="submit"
-            disabled={creating}
-            className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60"
-          >
+          <Button type="submit" disabled={creating} className="w-full">
             {creating ? "Creando..." : "Crear página"}
-          </button>
+          </Button>
         </div>
       </form>
 
@@ -929,9 +1047,9 @@ export default function LinkPagesScreen() {
             <div key={page.id} className="flex items-center gap-1">
               <button
                 onClick={() => setSelectedPageId(page.id)}
-                className={`flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${
+                className={`flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition ${
                   page.id === selectedPageId
-                    ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                    ? "border-slate-900 bg-slate-900/10 text-slate-900"
                     : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                 }`}
               >
@@ -951,6 +1069,13 @@ export default function LinkPagesScreen() {
                   Hacer default
                 </button>
               )}
+              <button
+                onClick={() => handleDeletePage(page.id)}
+                className="rounded-full px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50"
+                title="Eliminar página"
+              >
+                Eliminar
+              </button>
             </div>
           ))
         )}
@@ -1094,6 +1219,14 @@ export default function LinkPagesScreen() {
                             ↓
                           </button>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBlock(block.id)}
+                          className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100"
+                          title="Eliminar bloque"
+                        >
+                          Eliminar
+                        </button>
                       </div>
                     </div>
 
@@ -1212,7 +1345,7 @@ export default function LinkPagesScreen() {
                         <div className="flex justify-end">
                           <button
                             type="button"
-                            className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-semibold text-white"
+                            className="rounded-md bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
                             onClick={() => handleSaveBlockConfig(block.id, blockConfig)}
                           >
                             Guardar bloque
@@ -1291,7 +1424,7 @@ export default function LinkPagesScreen() {
                         <div className="flex justify-end">
                           <button
                             type="button"
-                            className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-semibold text-white"
+                            className="rounded-md bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
                             onClick={() => handleSaveBlockConfig(block.id, blockConfig)}
                           >
                             Guardar bloque
@@ -1319,12 +1452,12 @@ export default function LinkPagesScreen() {
                           </select>
                         </label>
                         <p className="text-[11px] text-slate-500">
-                          Las redes se toman del perfil (/dashboard/settings/profile).
+                          Las redes se toman del perfil (/dashboard/profile).
                         </p>
                         <div className="flex justify-end">
                           <button
                             type="button"
-                            className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-semibold text-white"
+                            className="rounded-md bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
                             onClick={() => handleSaveBlockConfig(block.id, blockConfig)}
                           >
                             Guardar bloque
@@ -1369,7 +1502,7 @@ export default function LinkPagesScreen() {
                         <div className="flex justify-end">
                           <button
                             type="button"
-                            className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-semibold text-white"
+                            className="rounded-md bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
                             onClick={() => handleSaveBlockConfig(block.id, blockConfig)}
                           >
                             Guardar bloque

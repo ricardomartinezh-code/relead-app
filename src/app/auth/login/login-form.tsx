@@ -3,6 +3,11 @@
 import { FormEvent, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
@@ -37,47 +42,52 @@ export default function LoginForm() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-white px-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg ring-1 ring-slate-200">
-        <h1 className="mb-2 text-2xl font-bold text-slate-900">Inicia sesión</h1>
-        <p className="mb-6 text-sm text-slate-600">Accede a tu panel para gestionar tu perfil.</p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
-            <input
-              name="email"
-              type="email"
-              placeholder="tu@email.com"
-              required
-              autoComplete="email"
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Contraseña</label>
-            <input
-              name="password"
-              type="password"
-              placeholder="******"
-              required
-              autoComplete="current-password"
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
-            />
-          </div>
-          <p className="min-h-[1.5rem] text-sm text-red-600" aria-live="polite">
-            {error}
+      <Card className="w-full max-w-md border-slate-200 shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-2xl">Inicia sesión</CardTitle>
+          <CardDescription>Accede a tu panel para gestionar tu perfil.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="tu@email.com"
+                autoComplete="email"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="******"
+                autoComplete="current-password"
+                required
+              />
+            </div>
+            {error && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Ingresando..." : "Ingresar"}
+            </Button>
+          </form>
+          <p className="mt-4 text-sm text-slate-600">
+            ¿Nuevo en ReLead?{" "}
+            <Link href="/auth/register" className="font-semibold text-slate-900 hover:underline">
+              Crear cuenta
+            </Link>
           </p>
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-70"
-            disabled={loading}
-          >
-            {loading ? "Ingresando..." : "Ingresar"}
-          </button>
-        </form>
-        <p className="mt-4 text-sm text-slate-600">
-          ¿Nuevo en ReLead? <a href="/auth/register" className="font-medium text-slate-900 hover:underline">Crear cuenta</a>
-        </p>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
