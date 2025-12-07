@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { getSession } from "@/lib/auth";
 import { getUserById } from "@/lib/db";
+import { Button } from "@/components/ui/button";
 
 import WhatsappEmbeddedSignup from "./WhatsappEmbeddedSignup";
 import WhatsappTestMessagePanel from "./WhatsappTestMessagePanel";
@@ -21,18 +22,12 @@ export default async function WhatsappPage() {
             Usa tus credenciales para acceder o crea una cuenta nueva para empezar.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
-            <Link
-              href="/auth/login"
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-            >
-              Iniciar sesión
-            </Link>
-            <Link
-              href="/auth/register"
-              className="rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-            >
-              Crear cuenta
-            </Link>
+            <Button asChild>
+              <Link href="/auth/login">Iniciar sesión</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/auth/register">Crear cuenta</Link>
+            </Button>
           </div>
         </div>
       </DashboardLayout>

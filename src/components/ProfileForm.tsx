@@ -4,6 +4,11 @@ import Image from "next/image";
 import { FormEvent, useState } from "react";
 import type { ChangeEvent } from "react";
 import { type ProfileRecord } from "@/lib/db";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 type ProfileFormProps = {
   profile: ProfileRecord;
@@ -16,6 +21,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl || "");
+  const [theme, setTheme] = useState<string>(profile.theme || "default");
 
   const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -82,7 +88,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
         title: form.get("title"),
         bio: form.get("bio") || null,
         avatarUrl: avatarUrl || null,
-        theme: form.get("theme") || "default",
+        theme: theme || "default",
       }),
       headers: { "Content-Type": "application/json; charset=utf-8" },
     });
@@ -95,38 +101,31 @@ export function ProfileForm({ profile }: ProfileFormProps) {
     setMessage("Perfil actualizado");
   };
 
-  const inputClassName =
-    "w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 transition";
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-slate-800">Título</label>
-        <input name="title" defaultValue={profile.title} required className={inputClassName} placeholder="Ej. Regina Mora" />
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="space-y-2">
+        <Label className="text-sm text-slate-700">Título</Label>
+        <Input name="title" defaultValue={profile.title} required placeholder="Ej. Regina Mora" />
       </div>
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-slate-800">Bio</label>
-        <textarea
+      <div className="space-y-2">
+        <Label className="text-sm text-slate-700">Bio</Label>
+        <Textarea
           name="bio"
           defaultValue={profile.bio || ""}
           rows={3}
-          className={inputClassName}
           placeholder="Comparte en qué te enfocas o a quién ayudas."
         />
       </div>
       <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-800">Avatar</label>
-        <input
-          type="file"
-          name="avatar"
-          accept="image/*"
-          onChange={handleAvatarChange}
-          className={inputClassName}
-        />
+        <Label className="text-sm text-slate-700">Avatar</Label>
+        <Input type="file" name="avatar" accept="image/*" onChange={handleAvatarChange} />
+        <p className="text-xs text-slate-500">
+          Sube una imagen cuadrada para mejores resultados.
+        </p>
         {uploading && <p className="text-xs text-slate-600">Subiendo imagen...</p>}
         {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
         {avatarUrl && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 p-2">
             <Image
               src={avatarUrl}
               alt="Avatar"
@@ -138,23 +137,24 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           </div>
         )}
       </div>
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-slate-800">Tema</label>
-        <select name="theme" defaultValue={profile.theme} className={inputClassName}>
-          <option value="default">Default</option>
-          <option value="dark">Dark</option>
-          <option value="pastel">Pastel</option>
-        </select>
+      <div className="space-y-2">
+        <Label className="text-sm text-slate-700">Tema</Label>
+        <Select value={theme} onValueChange={setTheme}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecciona un tema" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="default">Default</SelectItem>
+            <SelectItem value="dark">Dark</SelectItem>
+            <SelectItem value="pastel">Pastel</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       {message && <p className="text-sm text-emerald-600">{message}</p>}
-      <button
-        type="submit"
-        className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
-        disabled={loading}
-      >
+      <Button type="submit" className="w-full" disabled={loading}>
         {loading ? "Guardando..." : "Guardar cambios"}
-      </button>
+      </Button>
     </form>
   );
 }

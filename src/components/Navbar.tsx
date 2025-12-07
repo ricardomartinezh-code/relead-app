@@ -1,13 +1,22 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export function Navbar() {
   return (
-    <header className="border-b border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/" className="text-xl font-bold text-slate-900 transition hover:text-slate-700">ReLead</Link>
-        <nav className="flex gap-3 text-sm font-medium text-slate-600">
-          <Link href="/auth/login" className="rounded-md px-3 py-2 transition hover:bg-slate-100 hover:text-slate-900">Ingresar</Link>
-          <Link href="/auth/register" className="rounded-md bg-slate-900 px-4 py-2 text-white font-semibold transition hover:bg-slate-800 hover:shadow-md">Crear mi página</Link>
+    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold text-slate-900 transition hover:text-slate-700">
+          <span>ReLead</span>
+          <Badge variant="secondary" className="hidden text-[11px] text-slate-700 sm:inline-flex">Beta</Badge>
+        </Link>
+        <nav className="flex items-center gap-2 text-sm font-medium text-slate-600">
+          <Button asChild variant="ghost" size="sm" className="px-3 text-slate-700 hover:bg-slate-100">
+            <Link href="/auth/login">Ingresar</Link>
+          </Button>
+          <Button asChild size="sm" className="shadow-sm">
+            <Link href="/auth/register">Crear mi página</Link>
+          </Button>
         </nav>
       </div>
     </header>
