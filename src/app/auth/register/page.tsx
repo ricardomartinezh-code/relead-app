@@ -7,8 +7,16 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-white px-4">
       <div className="w-full max-w-md">
         <SignUp
+          path="/auth/register"
+          routing="path"
+          signInUrl="/auth/login"
           redirectUrl="/dashboard"
-          appearance={{ elements: { formButtonPrimary: "bg-slate-900 hover:bg-slate-800" } }}
+          appearance={{
+            elements: {
+              formButtonPrimary:
+                "bg-slate-900 hover:bg-slate-800 text-white",
+            },
+          }}
         />
       </div>
     </div>
