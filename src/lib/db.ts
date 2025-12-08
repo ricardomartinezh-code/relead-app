@@ -326,6 +326,10 @@ export async function ensureUserForClerk({
       user = created.rows[0];
     }
 
+    if (!user) {
+  throw new Error("ensureUserForClerk: user is null after creation logic");
+    }
+    
     let profileId = user.profileId;
     if (!profileId) {
       profileId = randomUUID();
