@@ -1,5 +1,6 @@
 "use client";
 
+import { getPublicLink } from "@/lib/urls";
 import { type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -942,47 +943,54 @@ export default function LinkPagesScreen() {
           ) : pages.length === 0 ? (
             <p className="text-sm text-slate-500">Aún no tienes páginas. Crea la primera.</p>
           ) : (
-            pages.map((page) => (
-              <div
-                key={page.id}
-                className="flex flex-col gap-2 rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm text-slate-800 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{page.internalName}</span>
-                    {page.isDefault && (
-                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                        Default
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                    <span>/{page.slug}</span>
-                    {page.isPublished && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">Publicado</span>}
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setSelectedPageId(page.id)}>
-                    Abrir en el editor
-                  </Button>
-                  <Button asChild variant="secondary" size="sm">
-                    <Link href={`/${page.slug}`} target="_blank">
-                      Ver página pública
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeletePage(page.id)}
-                  >
-                    Eliminar
-                  </Button>
-                </div>
-              </div>
-            ))
+            pages.map((page) => {
+  const publicUrl = getPublicLink(page.slug);
+
+  return (
+    <div
+      key={page.id}
+      className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-800 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold">{page.internalName}</span>
+          {page.isDefault && (
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+              Default
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+          {/* ahora mostramos la URL completa */}
+          <span>{publicUrl}</span>
+          {page.isPublished && (
+            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">
+              Publicado
+            </span>
           )}
         </div>
       </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="sm" onClick={() => setSelectedPageId(page.id)}>
+          Abrir en el editor
+        </Button>
+        <Button asChild variant="secondary" size="sm">
+          {/* y el botón abre la misma URL pública */}
+          <Link href={publicUrl} target="_blank">
+            Ver página pública
+          </Link>
+        </Button>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => handleDeletePage(page.id)}
+        >
+          Eliminar
+        </Button>
+      </div>
+    </div>
+  );
+})
 
       <form
         onSubmit={handleCreatePage}
