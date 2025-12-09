@@ -55,7 +55,7 @@ export default async function DashboardPage() {
           <CardHeader className="relative space-y-3">
             <div className="flex flex-wrap items-center gap-3">
               <Badge variant="secondary" className="bg-white/20 text-white">
-                Dashboard
+                Paneles
               </Badge>
               <Separator orientation="vertical" className="h-6 bg-white/30" />
               <p className="text-sm text-slate-100/80">Tus métricas de presencia digital</p>

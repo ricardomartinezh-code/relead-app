@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,36 +19,40 @@ export default function CommercialPage() {
           </p>
           <h1 className="text-3xl font-semibold text-slate-900">Canales y captación</h1>
           <p className="text-sm text-slate-600">
-            Conecta WhatsApp Business y gestiona tus CTA desde un solo lugar.
+            Conecta WhatsApp Business y gestiona tus CTA desde un solo lugar.  Puedes añadir la
+            integración con CTWA (Click To WhatsApp) o sin CTWA según tus necesidades.
           </p>
         </div>
-
         <div className="grid gap-4 md:grid-cols-2">
-          {/* WhatsApp Business card */}
+          {/* Integración con WhatsApp con y sin CTWA */}
           <Card className="shadow-sm">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-lg">WhatsApp Business</CardTitle>
+              <CardTitle className="text-lg">WhatsApp con CTWA</CardTitle>
               <CardDescription>
-                Configura mensajes de prueba, webhooks y obtén tus identificadores de negocio.
+                Utiliza el flujo oficial de Meta con Click&nbsp;To&nbsp;WhatsApp para que tus
+                clientes puedan iniciar una conversación desde tus enlaces.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full">
-                <Link href="/dashboard/whatsapp">Conectar WhatsApp</Link>
+                {/* Pasamos un parámetro de consulta para indicar el modo CTWA */}
+                <Link href="/dashboard/whatsapp?ctwa=true">Añadir WhatsApp con CTWA</Link>
               </Button>
             </CardContent>
           </Card>
 
-          {/* Placeholder for future channels */}
           <Card className="shadow-sm">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-lg">Próximamente</CardTitle>
+              <CardTitle className="text-lg">WhatsApp sin CTWA</CardTitle>
               <CardDescription>
-                Más canales de captación estarán disponibles pronto.
+                Integra WhatsApp Business sin el componente CTWA para campañas que no requieran el botón
+                personalizado.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex items-center justify-center">
-              <Badge variant="outline">Beta</Badge>
+            <CardContent>
+              <Button asChild className="w-full">
+                <Link href="/dashboard/whatsapp?ctwa=false">Añadir WhatsApp sin CTWA</Link>
+              </Button>
             </CardContent>
           </Card>
         </div>

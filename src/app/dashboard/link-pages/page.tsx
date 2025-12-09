@@ -23,6 +23,13 @@ interface ApiPageResponse {
   page: LinkPageWithContent;
 }
 
+// Estructura para representar un enlace social. Cada entrada cuenta con
+// un tipo (instagram, tiktok, x, youtube o custom) y una URL asociada.
+interface SocialLink {
+  type: string;
+  url: string;
+}
+
 const isProfileResponse = (
   value: unknown
 ): value is { profile?: ProfileRecord | null } => {
@@ -400,6 +407,93 @@ export default function LinkPagesScreen() {
   >({});
   const [linkCreating, setLinkCreating] = useState<Record<string, boolean>>({});
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
+
+  // Estado para la gestión de enlaces sociales. Permite cargar, editar,
+  // añadir y eliminar redes sociales del perfil desde la sección de páginas.
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [socialLoading, setSocialLoading] = useState(true);
+  const [socialSaving, setSocialSaving] = useState(false);
+  const [socialError, setSocialError] = useState<string | null>(null);
+  const [socialMessage, setSocialMessage] = useState<string | null>(null);
+  const SOCIAL_OPTIONS = ["instagram", "tiktok", "x", "youtube", "custom"];
+
+  // Cargar redes sociales del perfil al montar el componente.
+  useEffect(() => {
+    const fetchSocial = async () => {
+      try {
+        setSocialLoading(true);
+        setSocialError(null);
+        const res = await fetch("/api/profile");
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "No se pudo cargar el perfil");
+        }
+        const data = await res.json();
+        setSocialLinks(
+          Array.isArray(data.socialLinks)
+            ? data.socialLinks.map((l: any) => ({ type: l.type || "custom", url: l.url || "" }))
+            : []
+        );
+      } catch (err: any) {
+        setSocialError(err.message || "Error al cargar redes sociales");
+      } finally {
+        setSocialLoading(false);
+      }
+    };
+    fetchSocial();
+  }, []);
+
+  /**
+   * Añade una nueva red social vacía al listado.
+   */
+  const handleAddSocial = () => {
+    setSocialLinks((prev) => [...prev, { type: "custom", url: "" }]);
+  };
+
+  /**
+   * Elimina la red social en la posición indicada.
+   */
+  const handleRemoveSocial = (index: number) => {
+    setSocialLinks((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  /**
+   * Actualiza un campo específico (tipo o url) de una red social concreta.
+   */
+  const handleSocialChange = (index: number, field: keyof SocialLink, value: string) => {
+    setSocialLinks((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  /**
+   * Envía las redes sociales actualizadas al backend para persistir los cambios.
+   */
+  const handleSaveSocial = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    try {
+      setSocialSaving(true);
+      setSocialError(null);
+      setSocialMessage(null);
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({ socialLinks }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "No se pudo guardar las redes sociales");
+      }
+      await res.json().catch(() => ({}));
+      setSocialMessage("Redes sociales actualizadas");
+    } catch (err: any) {
+      setSocialError(err.message || "Error guardando redes sociales");
+    } finally {
+      setSocialSaving(false);
+    }
+  };
 
   useEffect(() => {
     const loadPages = async () => {
@@ -922,20 +1016,12 @@ export default function LinkPagesScreen() {
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-semibold text-slate-900">Accesos rápidos</p>
-            <p className="text-xs text-slate-600">Visita o abre en el editor cualquiera de tus páginas.</p>
+            {/* Cambiamos el título para reflejar la lista de páginas existentes */}
+            <p className="text-sm font-semibold text-slate-900">Tus páginas</p>
+            <p className="text-xs text-slate-600">
+              Selecciona una página para editar o elimina alguna. Usa el formulario de abajo para crear una nueva.
+            </p>
           </div>
-          <Button
-            type="button"
-            onClick={() => {
-              setInitialized(true);
-              setSelectedPageId(null);
-              setPageForm({ internalName: "", slug: "" });
-              setPageSlugEdited(false);
-            }}
-          >
-            Crear nueva
-          </Button>
         </div>
         <div className="mt-3 space-y-2">
           {loadingPages ? (
@@ -1030,18 +1116,25 @@ export default function LinkPagesScreen() {
             placeholder="Principal"
           />
         </label>
+        {/* Campo para especificar la URL pública de la página.  Muestra el dominio fijo
+            rlead.xyz como prefijo y permite al usuario editar solo el slug. */}
         <label className="flex flex-col gap-1 text-xs text-slate-700">
-          Slug
-          <input
-            type="text"
-            value={pageForm.slug}
-            onChange={(e) => {
-              setPageSlugEdited(true);
-              setPageForm((prev) => ({ ...prev, slug: e.target.value }));
-            }}
-            className="rounded-md border border-slate-300 px-2 py-1 text-sm"
-            placeholder="mi-pagina"
-          />
+          URL
+          <div className="flex items-center gap-1">
+            <span className="rounded-md border border-slate-300 bg-slate-100 px-2 py-1 text-sm text-slate-600">
+              rlead.xyz/
+            </span>
+            <input
+              type="text"
+              value={pageForm.slug}
+              onChange={(e) => {
+                setPageSlugEdited(true);
+                setPageForm((prev) => ({ ...prev, slug: e.target.value }));
+              }}
+              className="flex-1 rounded-md border border-slate-300 px-2 py-1 text-sm"
+              placeholder="tu-enlace"
+            />
+          </div>
         </label>
         <div className="flex items-end justify-end">
           <Button type="submit" disabled={creating} className="w-full">
@@ -1480,7 +1573,7 @@ export default function LinkPagesScreen() {
                           </select>
                         </label>
                         <p className="text-[11px] text-slate-500">
-                          Las redes se toman del perfil (/dashboard/profile).
+                          Las redes se toman de la configuración de redes sociales en esta sección.
                         </p>
                         <div className="flex justify-end">
                           <button
@@ -1604,6 +1697,76 @@ export default function LinkPagesScreen() {
           <div className="flex justify-center">
             <PublicLinkPage page={pageForPreview} variant="preview" />
           </div>
+        </div>
+
+        {/* Panel de redes sociales: permite gestionar las redes directamente desde la sección de páginas */}
+        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm space-y-3">
+          <h2 className="text-sm font-semibold text-slate-900">Redes sociales</h2>
+          {socialLoading ? (
+            <p className="text-sm text-slate-500">Cargando redes…</p>
+          ) : (
+            <form onSubmit={handleSaveSocial} className="space-y-3">
+              {socialError && (
+                <div className="text-sm text-red-600">{socialError}</div>
+              )}
+              {socialMessage && (
+                <div className="text-sm text-emerald-600">{socialMessage}</div>
+              )}
+              {socialLinks.length === 0 && (
+                <p className="text-sm text-slate-500">Aún no tienes redes añadidas.</p>
+              )}
+              <div className="space-y-3">
+                {socialLinks.map((link, index) => (
+                  <div
+                    key={index}
+                    className="grid gap-2 md:grid-cols-[1fr,2fr,auto]"
+                  >
+                    <select
+                      value={link.type}
+                      onChange={(e) => handleSocialChange(index, "type", e.target.value)}
+                      className="w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                    >
+                      {SOCIAL_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="url"
+                      value={link.url}
+                      onChange={(e) => handleSocialChange(index, "url", e.target.value)}
+                      placeholder="https://..."
+                      className="w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSocial(index)}
+                      className="rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={handleAddSocial}
+                  className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                >
+                  + Añadir red
+                </button>
+                <button
+                  type="submit"
+                  disabled={socialSaving}
+                  className="rounded-md bg-slate-900 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-50"
+                >
+                  {socialSaving ? "Guardando..." : "Guardar redes"}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
       </div>

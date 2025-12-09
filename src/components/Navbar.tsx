@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/components/lib/utils";
 
+// En la navegación principal eliminamos el enlace "Legal", ya que los
+// documentos legales se acceden desde el pie de página.  Se mantienen los
+// anclajes internos de la landing.
 const navLinks = [
   { href: "#producto", label: "Producto" },
   { href: "#flujo", label: "Flujo" },
   { href: "#metricas", label: "Métricas" },
-  { href: "/legal/terms", label: "Legal" },
 ];
 
 export function Navbar() {
@@ -30,8 +32,10 @@ export function Navbar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "rounded-full px-3 py-1 transition hover:text-slate-900",
-                item.href.startsWith("#") ? "hover:bg-slate-100/80" : undefined
+                "rounded-full px-3 py-1 transition transform duration-200 hover:text-slate-900",
+                item.href.startsWith("#")
+                  ? "hover:bg-slate-100/80 hover:-translate-y-0.5"
+                  : "hover:-translate-y-0.5"
               )}
             >
               {item.label}
