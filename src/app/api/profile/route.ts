@@ -10,6 +10,20 @@ interface ProfileResponse {
   avatarUrl: string | null;
   socialLinks: any;
   settings: any;
+  /**
+   * Título público del perfil. Este campo se muestra en la página pública
+   * de enlaces y puede editarse desde el formulario de perfil.
+   */
+  title?: string | null;
+  /**
+   * Tema visual elegido para la página pública del perfil. Puede ser
+   * "default", "dark" u otras variantes.
+   */
+  theme?: string | null;
+  /**
+   * Nombre del usuario (de la tabla users). Se expone aquí por conveniencia,
+   * aunque no es editable desde este endpoint.
+   */
   name?: string | null;
 }
 
@@ -22,6 +36,10 @@ function mapProfile(row: any): ProfileResponse {
     avatarUrl: row.avatar_url,
     socialLinks: row.social_links ?? [],
     settings: row.settings ?? {},
+    // Incluimos title y theme si existen en la fila. Si no existen,
+    // se devuelve null para mantener compatibilidad con clientes previos.
+    title: row.title ?? null,
+    theme: row.theme ?? null,
     name: row.name ?? null,
   };
 }
@@ -61,7 +79,17 @@ export async function PUT(req: Request) {
 
   try {
     const body = await req.json();
-    const { username, bio, avatarUrl, socialLinks, settings } = body ?? {};
+    // Extraemos campos del body. Permitimos título y tema además de los ya
+    // existentes para soportar la edición del perfil público.
+    const {
+      username,
+      bio,
+      avatarUrl,
+      socialLinks,
+      settings,
+      title,
+      theme,
+    } = body ?? {};
 
     const currentRows = await sql/*sql*/`
       SELECT * FROM profiles WHERE user_id = ${user.id} LIMIT 1
@@ -78,6 +106,8 @@ export async function PUT(req: Request) {
     const nextAvatarUrl = avatarUrl ?? current.avatar_url;
     const nextSocialLinks = socialLinks ?? current.social_links ?? [];
     const nextSettings = settings ?? current.settings ?? {};
+    const nextTitle = title ?? current.title;
+    const nextTheme = theme ?? current.theme;
 
     const updatedRows = await sql/*sql*/`
       UPDATE profiles
@@ -87,6 +117,8 @@ export async function PUT(req: Request) {
         avatar_url = ${nextAvatarUrl},
         social_links = ${nextSocialLinks}::jsonb,
         settings = ${nextSettings}::jsonb,
+        title = ${nextTitle},
+        theme = ${nextTheme},
         updated_at = now()
       WHERE id = ${current.id}
       RETURNING *, (SELECT name FROM users WHERE id = user_id) AS name

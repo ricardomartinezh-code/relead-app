@@ -55,7 +55,8 @@ export default function WhatsappEmbeddedSignup() {
         data =
           typeof event.data === "string" ? JSON.parse(event.data) : event.data;
       } catch {
-        console.log("Mensaje no JSON desde postMessage:", event.data);
+        // Si no podemos parsear el mensaje simplemente lo ignoramos. Evitamos logs en consola
+        // para no ensuciar la salida del build.
         return;
       }
 
@@ -68,13 +69,17 @@ export default function WhatsappEmbeddedSignup() {
             wabaId: waba_id ?? null,
           });
 
-          console.log("FINISH WA_EMBEDDED_SIGNUP:", { phone_number_id, waba_id });
+          // No logeamos en consola para evitar ruido en producción
         } else if (data.event === "CANCEL") {
           const { current_step } = data.data || {};
-          console.warn("CANCEL WA_EMBEDDED_SIGNUP en paso:", current_step);
+          // Si el usuario cancela podemos mostrar un mensaje de error opcional
+          setSubmitError(
+            `Flujo cancelado en el paso ${current_step ?? "desconocido"}. Puedes volver a intentarlo.`
+          );
         } else if (data.event === "ERROR") {
           const { error_message } = data.data || {};
-          console.error("ERROR WA_EMBEDDED_SIGNUP:", error_message);
+          // Registramos el mensaje de error en el estado para mostrarlo al usuario. No hacemos log en consola.
+          setSubmitError(error_message || "Error desconocido en el flujo de WhatsApp");
         }
       }
 
@@ -159,7 +164,6 @@ export default function WhatsappEmbeddedSignup() {
     setSubmitError(null);
 
     if (!configId) {
-      console.error("Falta configId para la variante:", variantLabel);
       setSubmitError(
         `Falta configurar el ID de configuración de WhatsApp para la variante "${variantLabel}".`
       );
@@ -167,7 +171,6 @@ export default function WhatsappEmbeddedSignup() {
     }
 
     if (!isMetaSdkReady || typeof FB === "undefined") {
-      console.error("El SDK de Facebook aún no está disponible (FB es undefined).");
       setSubmitError(
         "El SDK de Facebook todavía no terminó de cargar. Espera unos segundos y vuelve a intentar."
       );

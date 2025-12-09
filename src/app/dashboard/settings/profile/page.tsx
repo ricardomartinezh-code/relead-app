@@ -124,6 +124,34 @@ export default function ProfileSettingsPage() {
     }
   };
 
+  /**
+   * Maneja la eliminación permanente de la cuenta. Muestra una confirmación
+   * antes de enviar la solicitud al servidor. Tras borrar la cuenta
+   * redirigimos al usuario a la página principal.
+   */
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      "¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer."
+    );
+    if (!confirmed) return;
+    try {
+      setSaving(true);
+      setError(null);
+      setMessage(null);
+      const res = await fetch("/api/account", { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "No se pudo eliminar la cuenta");
+      }
+      // Después de eliminar la cuenta, redirigimos al usuario fuera del dashboard.
+      window.location.href = "/";
+    } catch (err: any) {
+      setError(err.message || "Error eliminando cuenta");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="mx-auto flex max-w-3xl flex-col gap-4 p-4">
@@ -261,6 +289,23 @@ export default function ProfileSettingsPage() {
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60"
             >
               {saving ? "Guardando..." : "Guardar cambios"}
+            </button>
+          </div>
+
+          {/* Sección de eliminación de cuenta */}
+          <div className="mt-8 space-y-2 rounded-md border border-red-200 bg-red-50 p-4">
+            <h2 className="text-sm font-semibold text-red-800">Eliminar cuenta</h2>
+            <p className="text-sm text-red-700">
+              Al eliminar tu cuenta se borrará tu perfil y dejarás de tener acceso
+              al panel. Esta acción es irreversible.
+            </p>
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={saving}
+              className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-60"
+            >
+              {saving ? "Eliminando..." : "Eliminar cuenta"}
             </button>
           </div>
         </form>
