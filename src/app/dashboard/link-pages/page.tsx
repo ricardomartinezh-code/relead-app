@@ -1060,51 +1060,54 @@ export default function LinkPagesScreen() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        {loadingPages ? (
-          <span className="text-sm text-slate-500">Cargando páginas…</span>
-        ) : pages.length === 0 ? (
-          <span className="text-sm text-slate-500">
-            Aún no tienes páginas. Crea la primera.
-          </span>
-        ) : (
-          pages.map((page) => (
-            <div key={page.id} className="flex items-center gap-1">
-              <button
-                onClick={() => setSelectedPageId(page.id)}
-                className={`flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition ${
-                  page.id === selectedPageId
-                    ? "border-slate-900 bg-slate-900/10 text-slate-900"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                {page.internalName}
-                {page.isDefault && (
-                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                    Default
-                  </span>
-                )}
-              </button>
-              {!page.isDefault && (
+      {/*
+        La lista de páginas en formato de chips solo se muestra cuando existen páginas.
+        Si no hay páginas no repetimos el mensaje “Aún no tienes páginas” aquí para
+        evitar duplicados (ya se muestra arriba en Accesos rápidos).
+      */}
+      {pages.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {loadingPages ? (
+            <span className="text-sm text-slate-500">Cargando páginas…</span>
+          ) : (
+            pages.map((page) => (
+              <div key={page.id} className="flex items-center gap-1">
                 <button
-                  onClick={() => handleSetDefault(page.id)}
-                  className="rounded-full px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-100"
-                  title="Marcar como página por defecto"
+                  onClick={() => setSelectedPageId(page.id)}
+                  className={`flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition ${
+                    page.id === selectedPageId
+                      ? "border-slate-900 bg-slate-900/10 text-slate-900"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  }`}
                 >
-                  Hacer default
+                  {page.internalName}
+                  {page.isDefault && (
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                      Default
+                    </span>
+                  )}
                 </button>
-              )}
-              <button
-                onClick={() => handleDeletePage(page.id)}
-                className="rounded-full px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50"
-                title="Eliminar página"
-              >
-                Eliminar
-              </button>
-            </div>
-          ))
-        )}
-      </div>
+                {!page.isDefault && (
+                  <button
+                    onClick={() => handleSetDefault(page.id)}
+                    className="rounded-full px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-100"
+                    title="Marcar como página por defecto"
+                  >
+                    Hacer default
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDeletePage(page.id)}
+                  className="rounded-full px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50"
+                  title="Eliminar página"
+                >
+                  Eliminar
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-[2fr,1.5fr]">
         <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
