@@ -402,8 +402,20 @@ export default function LinkPagesScreen() {
   const [pageFormError, setPageFormError] = useState<string | null>(null);
   const [blockForm, setBlockForm] = useState({ title: "", blockType: "links" });
   const [blockCreating, setBlockCreating] = useState(false);
+  // Drafts for new link items keyed by block id.  In addition to label and URL,
+  // a draft can contain optional iconType (e.g. "instagram", "twitter", "custom"),
+  // a specific icon key (for default icons) and an imageUrl for custom uploads.
   const [linkDrafts, setLinkDrafts] = useState<
-    Record<string, { label: string; url: string }>
+    Record<
+      string,
+      {
+        label: string;
+        url: string;
+        iconType?: string;
+        icon?: string | null;
+        imageUrl?: string | null;
+      }
+    >
   >({});
   const [linkCreating, setLinkCreating] = useState<Record<string, boolean>>({});
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
@@ -748,6 +760,18 @@ export default function LinkPagesScreen() {
       const draft = linkDrafts[block.id] || { label: "", url: "" };
       const label = draft.label.trim();
       const url = draft.url.trim() || null;
+      // Determine icon and imageUrl based on the draft's iconType.  If the user selected
+      // a built‑in icon (e.g. instagram, x, tiktok) then set `icon` accordingly and leave
+      // imageUrl null.  If the user uploaded a custom image, use the imageUrl and clear
+      // the icon.  Otherwise both remain null.
+      let icon: string | null = null;
+      let imageUrl: string | null = null;
+      if (draft.iconType && draft.iconType !== "" && draft.iconType !== "custom") {
+        icon = draft.iconType;
+      }
+      if (draft.iconType === "custom" && draft.imageUrl) {
+        imageUrl = draft.imageUrl;
+      }
       if (!label) {
         setLinkCreating((prev) => ({ ...prev, [block.id]: false }));
         return;
@@ -764,6 +788,8 @@ export default function LinkPagesScreen() {
           position,
           label,
           url,
+          icon,
+          imageUrl,
         }),
       });
 
@@ -784,11 +810,58 @@ export default function LinkPagesScreen() {
           ),
         };
       });
-      setLinkDrafts((prev) => ({ ...prev, [block.id]: { label: "", url: "" } }));
+      setLinkDrafts((prev) => ({
+        ...prev,
+        [block.id]: { label: "", url: "", iconType: undefined, icon: undefined, imageUrl: undefined },
+      }));
     } catch (err: any) {
       setError(err.message || "Error creando link");
     } finally {
       setLinkCreating((prev) => ({ ...prev, [block.id]: false }));
+    }
+  };
+
+  /**
+   * Carga un archivo de imagen para un ícono personalizado.  Cuando se
+   * selecciona un archivo, se envía al endpoint de subida de avatares
+   * (/api/upload/avatar), que a su vez sube la imagen a Cloudinary y
+   * devuelve la URL segura.  El resultado se almacena en el draft del
+   * bloque correspondiente con iconType "custom" y se borra el valor
+   * de icon por defecto.
+   */
+  const handleIconUpload = async (
+    e: any,
+    blockId: string
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload/avatar", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        console.error("Error subiendo imagen de ícono");
+        return;
+      }
+      const data = await res.json();
+      if (!data.url) return;
+      setLinkDrafts((prev) => {
+        const prevDraft = prev[blockId] || { label: "", url: "" };
+        return {
+          ...prev,
+          [blockId]: {
+            ...prevDraft,
+            iconType: "custom",
+            imageUrl: data.url,
+            icon: undefined,
+          },
+        };
+      });
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -1649,8 +1722,8 @@ export default function LinkPagesScreen() {
                               setLinkDrafts((prev) => ({
                                 ...prev,
                                 [block.id]: {
+                                  ...prev[block.id],
                                   label: e.target.value,
-                                  url: prev[block.id]?.url || "",
                                 },
                               }))
                             }
@@ -1667,7 +1740,7 @@ export default function LinkPagesScreen() {
                               setLinkDrafts((prev) => ({
                                 ...prev,
                                 [block.id]: {
-                                  label: prev[block.id]?.label || "",
+                                  ...prev[block.id],
                                   url: e.target.value,
                                 },
                               }))
@@ -1676,6 +1749,40 @@ export default function LinkPagesScreen() {
                             placeholder="https://..."
                           />
                         </label>
+                        {/* Selección de icono para el enlace */}
+                        <label className="flex flex-col gap-1 text-xs text-slate-700">
+                          Icono
+                          <select
+                            value={linkDrafts[block.id]?.iconType || ""}
+                            onChange={(e) =>
+                              setLinkDrafts((prev) => ({
+                                ...prev,
+                                [block.id]: {
+                                  ...prev[block.id],
+                                  iconType: e.target.value,
+                                },
+                              }))
+                            }
+                            className="w-32 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                          >
+                            <option value="">Ninguno</option>
+                            <option value="instagram">Instagram</option>
+                            <option value="tiktok">TikTok</option>
+                            <option value="x">X/Twitter</option>
+                            <option value="youtube">YouTube</option>
+                            <option value="whatsapp">WhatsApp</option>
+                            <option value="custom">Personalizado…</option>
+                          </select>
+                        </label>
+                        {/* Campo de carga solo cuando el usuario selecciona un icono personalizado */}
+                        {linkDrafts[block.id]?.iconType === "custom" && (
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleIconUpload(e as any, block.id)}
+                            className="w-40 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                          />
+                        )}
                         <button
                           type="submit"
                           disabled={linkCreating[block.id]}
@@ -1690,13 +1797,6 @@ export default function LinkPagesScreen() {
               })}
             </div>
           )}
-        </div>
-
-        <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-950 p-3 text-slate-50 shadow-sm">
-          <h2 className="text-sm font-semibold">Vista previa</h2>
-          <div className="flex justify-center">
-            <PublicLinkPage page={pageForPreview} variant="preview" />
-          </div>
         </div>
 
         {/* Panel de redes sociales: permite gestionar las redes directamente desde la sección de páginas */}
@@ -1767,6 +1867,14 @@ export default function LinkPagesScreen() {
               </div>
             </form>
           )}
+        </div>
+
+        {/* Vista previa de la página */}
+        <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-950 p-3 text-slate-50 shadow-sm">
+          <h2 className="text-sm font-semibold">Vista previa</h2>
+          <div className="flex justify-center">
+            <PublicLinkPage page={pageForPreview} variant="preview" />
+          </div>
         </div>
       </div>
       </div>

@@ -50,6 +50,24 @@ export async function GET() {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
+  // Si no existe una base de datos configurada, devolvemos un perfil simulado
+  // para que la aplicación siga funcionando en modo demo.  Esto evita
+  // fallos al llamar a la base de datos y permite probar la interfaz.
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({
+      id: "demo-profile",
+      userId: user.id,
+      username: user.username || null,
+      bio: null,
+      avatarUrl: null,
+      socialLinks: [],
+      settings: {},
+      title: null,
+      theme: null,
+      name: user.name || null,
+    });
+  }
+
   try {
     const rows = await sql/*sql*/`
       SELECT p.*, u.name
@@ -75,6 +93,34 @@ export async function PUT(req: Request) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
+  // Si no hay base de datos, aceptamos la petición pero no persistimos nada.
+  // Devolvemos el mismo cuerpo recibido para que la UI piense que se ha
+  // actualizado correctamente.  Esto es útil en modo demo o sin BD.
+  if (!process.env.DATABASE_URL) {
+    try {
+      const body = await req.json();
+      const { username, bio, avatarUrl, socialLinks, settings, title, theme } = body ?? {};
+      return NextResponse.json({
+        id: "demo-profile",
+        userId: user.id,
+        username: username || user.username || null,
+        bio: bio || null,
+        avatarUrl: avatarUrl || null,
+        socialLinks: socialLinks || [],
+        settings: settings || {},
+        title: title || null,
+        theme: theme || null,
+        name: user.name || null,
+      });
+    } catch (error) {
+      console.error("Error en modo demo actualizando perfil:", error);
+      return NextResponse.json(
+        { error: "Error al actualizar perfil" },
+        { status: 500 }
+      );
+    }
   }
 
   try {
