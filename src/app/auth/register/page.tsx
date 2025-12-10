@@ -11,7 +11,8 @@ export default function RegisterPage() {
           path="/auth/register"
           routing="path"
           signInUrl="/auth/login"
-          redirectUrl="/dashboard"
+          // Clerk deprecated `redirectUrl`, use `fallbackRedirectUrl` instead.  See docs for details.
+          fallbackRedirectUrl="/dashboard"
           appearance={{
             elements: {
               formButtonPrimary:

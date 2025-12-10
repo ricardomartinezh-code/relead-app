@@ -9,7 +9,8 @@ export default function LoginForm() {
         <SignIn
           path="/auth/login"
           signUpUrl="/auth/register"
-          redirectUrl="/dashboard"
+          // `redirectUrl` is deprecated; replace with `fallbackRedirectUrl` per Clerk docs
+          fallbackRedirectUrl="/dashboard"
           appearance={{
             elements: {
               formButtonPrimary:

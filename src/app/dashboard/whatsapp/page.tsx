@@ -6,6 +6,8 @@ import { getUserById } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 
 import WhatsappEmbeddedSignup from "./WhatsappEmbeddedSignup";
+// Import the MetaSdkProvider to wrap components that call `useMetaSdk`.
+import { MetaSdkProvider } from "@/app/providers/MetaSdkProvider";
 import WhatsappTestMessagePanel from "./WhatsappTestMessagePanel";
 
 export default async function WhatsappPage() {
@@ -70,7 +72,16 @@ export default async function WhatsappPage() {
                 número.
               </p>
             </div>
-            <WhatsappEmbeddedSignup />
+            {/*
+             * `WhatsappEmbeddedSignup` relies on the `useMetaSdk` hook from
+             * `MetaSdkProvider`.  If it is rendered outside of the provider,
+             * a runtime error is thrown ("useMetaSdk debe usarse dentro de
+             * MetaSdkProvider").  Wrap the component in the provider here to
+             * ensure the hook has the necessary context on the client.
+             */}
+            <MetaSdkProvider>
+              <WhatsappEmbeddedSignup />
+            </MetaSdkProvider>
           </div>
 
           <div className="space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">

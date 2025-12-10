@@ -20,7 +20,10 @@ export default function LoginPage() {
           routing="path"
           path="/auth/login"
           signUpUrl="/auth/register"
-          redirectUrl="/dashboard"
+          // `redirectUrl` has been deprecated in newer versions of Clerk.  Use
+          // `fallbackRedirectUrl` instead to avoid runtime warnings.  See
+          // https://clerk.com/docs/guides/custom-redirects#redirect-url-props for details.
+          fallbackRedirectUrl="/dashboard"
           appearance={{
             elements: {
               formButtonPrimary:
