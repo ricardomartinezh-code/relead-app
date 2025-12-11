@@ -58,7 +58,8 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="es">
+      {/* Prefijo ogp.me para Open Graph */}
+      <html lang="es" prefix="og: http://ogp.me/ns#">
         <body
           className={`${inter.variable} ${jetBrainsMono.variable} antialiased`}
         >

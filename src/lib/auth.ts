@@ -6,6 +6,7 @@ export type AppUser = {
   clerkId: string;
   email: string | null;
   name: string | null;
+  username: string | null;
   profileId?: string | null;
 };
 
@@ -33,6 +34,7 @@ export async function getCurrentUser(): Promise<AppUser | null> {
     clerkId: userId,
     email: dbUser.email ?? email ?? null,
     name: dbUser.name ?? name ?? null,
+    username: dbUser.username ?? username ?? null,
     profileId: dbUser.profileId ?? null,
   };
 }
