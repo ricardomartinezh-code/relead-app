@@ -12,6 +12,16 @@ export default function LoginForm() {
           // `redirectUrl` is deprecated; replace with `fallbackRedirectUrl` per Clerk docs
           fallbackRedirectUrl="/dashboard"
           appearance={{
+  elements: {
+    formButton: {
+      backgroundColor: '#1877f2',
+      color: '#fff',
+      borderRadius: '4px',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      height: '40px',
+      padding: '0 24px',
+    },
             elements: {
               formButtonPrimary:
                 "bg-slate-900 hover:bg-slate-800 text-white",
