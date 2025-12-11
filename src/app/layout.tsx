@@ -12,10 +12,43 @@ const jetBrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = "https://relead.com.mx";
+const defaultTitle = "ReLead | Link en bio listo para producción";
+const defaultDescription =
+  "Crea y mide tu página de enlaces con un diseño pulido y analíticas claras.";
+
 export const metadata: Metadata = {
-  title: "ReLead | Link en bio listo para producción",
-  description:
-    "Crea y mide tu página de enlaces con un diseño pulido y analíticas claras.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: defaultTitle,
+    template: "%s | ReLead",
+  },
+  description: defaultDescription,
+  openGraph: {
+    type: "website",
+    url: siteUrl,
+    title: defaultTitle,
+    description: defaultDescription,
+    siteName: "ReLead",
+    images: [
+      {
+        url: "/og-default.png",
+        width: 1200,
+        height: 630,
+        alt: "ReLead – panel de enlaces tipo link-in-bio",
+      },
+    ],
+    locale: "es_MX",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: defaultTitle,
+    description: defaultDescription,
+    images: ["/og-default.png"],
+  },
+  alternates: {
+    canonical: siteUrl,
+  },
 };
 
 export default function RootLayout({

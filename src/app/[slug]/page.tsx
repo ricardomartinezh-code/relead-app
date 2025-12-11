@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { LinkButtons } from "@/components/PublicLinks";
 import PublicLinkPage from "@/components/link-pages/PublicLinkPage";
-import { getProfileBySlug, getLinksByProfileId, recordPageView } from "@/lib/db";
+import {
+  getProfileBySlug,
+  getLinksByProfileId,
+  recordPageView,
+} from "@/lib/db";
 import { getDefaultPublicLinkPageByUserId } from "@/lib/db/linkPagePublic";
 import { headers } from "next/headers";
 import Image from "next/image";
@@ -13,14 +18,87 @@ function getInitials(text: string) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-export default async function PublicProfilePage({ params }: { params: { slug: string } }) {
+const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://relead.com.mx";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const profile = await getProfileBySlug(params.slug);
+
+  const canonicalUrl = `${APP_BASE_URL}/${params.slug}`;
+
+  if (!profile) {
+    return {
+      title: "Perfil no encontrado | ReLead",
+      description: "El perfil solicitado no existe o ha sido desactivado.",
+      alternates: {
+        canonical: canonicalUrl,
+      },
+      openGraph: {
+        type: "website",
+        title: "Perfil no encontrado | ReLead",
+        description: "El perfil solicitado no existe o ha sido desactivado.",
+        url: canonicalUrl,
+        siteName: "ReLead",
+      },
+      twitter: {
+        card: "summary",
+        title: "Perfil no encontrado | ReLead",
+        description: "El perfil solicitado no existe o ha sido desactivado.",
+      },
+    };
+  }
+
+  const title = profile.title
+    ? `${profile.title} | ReLead`
+    : "Perfil público | ReLead";
+  const description =
+    profile.bio || "Explora todos mis enlaces, redes y contenido en ReLead.";
+  const image = profile.avatarUrl || "/og-default.png";
+
+  return {
+    title,
+    description,
+    openGraph: {
+      type: "profile",
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: "ReLead",
+      images: [
+        {
+          url: image,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+    alternates: {
+      canonical: canonicalUrl,
+    },
+  };
+}
+
+export default async function PublicProfilePage({
+  params,
+}: {
+  params: { slug: string };
+}) {
   const profile = await getProfileBySlug(params.slug);
   if (!profile) return notFound();
 
-  const defaultLinkPage = await getDefaultPublicLinkPageByUserId(profile.userId);
+  const defaultLinkPage = await getDefaultPublicLinkPageByUserId(
+    profile.userId,
+  );
 
   const links = await getLinksByProfileId(profile.id);
-  const activeLinks = links.filter(l => l.isActive);
+  const activeLinks = links.filter((l) => l.isActive);
 
   const hdrs = headers();
   const referrer = hdrs.get("referer") || undefined;
@@ -31,9 +109,7 @@ export default async function PublicProfilePage({ params }: { params: { slug: st
   const initials = getInitials(profile.title || "ReLead");
 
   if (defaultLinkPage) {
-    return (
-      <PublicLinkPage page={defaultLinkPage} variant="full" />
-    );
+    return <PublicLinkPage page={defaultLinkPage} variant="full" />;
   }
 
   return (
@@ -55,13 +131,17 @@ export default async function PublicProfilePage({ params }: { params: { slug: st
           )}
           <div className="space-y-2">
             <h1 className="text-2xl font-semibold">{profile.title}</h1>
-            {profile.bio && <p className="text-sm text-slate-300">{profile.bio}</p>}
+            {profile.bio && (
+              <p className="text-sm text-slate-300">{profile.bio}</p>
+            )}
           </div>
         </div>
 
         <LinkButtons links={activeLinks} />
 
-        <p className="mt-6 text-center text-xs text-slate-500">Hecho con ReLead · relead.com.mx</p>
+        <p className="mt-6 text-center text-xs text-slate-500">
+          Hecho con ReLead · relead.com.mx
+        </p>
       </div>
     </main>
   );
