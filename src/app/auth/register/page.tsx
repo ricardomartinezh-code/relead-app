@@ -1,4 +1,6 @@
-// src/app/auth/register/page.tsx
+
+    import React from "react"; // Asegurando que React esté importado
+    
 "use client";
 
 import { SignUp } from "@clerk/nextjs";
