@@ -95,48 +95,43 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
+  // Intentamos leer el cuerpo una sola vez al inicio.  Si falla, devolvemos
+  // un error 400 porque no podemos procesar la petición.
+  let body: any;
+  try {
+    body = await req.json();
+  } catch (parseErr) {
+    console.error("Error leyendo el cuerpo de la petición de perfil:", parseErr);
+    return NextResponse.json(
+      { error: "Cuerpo de la petición inválido" },
+      { status: 400 }
+    );
+  }
+
+  const { username, bio, avatarUrl, socialLinks, settings, title, theme } =
+    body ?? {};
+
   // Si no hay base de datos, aceptamos la petición pero no persistimos nada.
-  // Devolvemos el mismo cuerpo recibido para que la UI piense que se ha
-  // actualizado correctamente.  Esto es útil en modo demo o sin BD.
+  // Devolvemos un objeto basado en el cuerpo recibido y el usuario para que
+  // la UI piense que se ha actualizado correctamente.  Esto es útil en modo
+  // demo o cuando DATABASE_URL no está configurada (previene errores 500).
   if (!process.env.DATABASE_URL) {
-    try {
-      const body = await req.json();
-      const { username, bio, avatarUrl, socialLinks, settings, title, theme } = body ?? {};
-      return NextResponse.json({
-        id: "demo-profile",
-        userId: user.id,
-        username: username || user.username || null,
-        bio: bio || null,
-        avatarUrl: avatarUrl || null,
-        socialLinks: socialLinks || [],
-        settings: settings || {},
-        title: title || null,
-        theme: theme || null,
-        name: user.name || null,
-      });
-    } catch (error) {
-      console.error("Error en modo demo actualizando perfil:", error);
-      return NextResponse.json(
-        { error: "Error al actualizar perfil" },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({
+      id: "demo-profile",
+      userId: user.id,
+      username: username || user.username || null,
+      bio: bio || null,
+      avatarUrl: avatarUrl || null,
+      socialLinks: socialLinks || [],
+      settings: settings || {},
+      title: title || null,
+      theme: theme || null,
+      name: user.name || null,
+    });
   }
 
   try {
-    const body = await req.json();
-    // Extraemos campos del body. Permitimos título y tema además de los ya
-    // existentes para soportar la edición del perfil público.
-    const {
-      username,
-      bio,
-      avatarUrl,
-      socialLinks,
-      settings,
-      title,
-      theme,
-    } = body ?? {};
-
+    // Buscamos el perfil actual del usuario.  Si no existe, devolvemos 404.
     const currentRows = await sql/*sql*/`
       SELECT * FROM profiles WHERE user_id = ${user.id} LIMIT 1
     `;
@@ -179,28 +174,18 @@ export async function PUT(req: Request) {
     // lugar de hacer fallar la petición.  Esto evita errores 500 en la
     // interfaz y permite seguir usando la aplicación mientras se corrige
     // el esquema de la base de datos.
-    try {
-      const body = await req.json();
-      const { username, bio, avatarUrl, socialLinks, settings, title, theme } = body ?? {};
-      return NextResponse.json({
-        id: "demo-profile",
-        userId: user.id,
-        username: username ?? user.username ?? null,
-        bio: bio ?? null,
-        avatarUrl: avatarUrl ?? null,
-        socialLinks: socialLinks ?? [],
-        settings: settings ?? {},
-        title: title ?? null,
-        theme: theme ?? null,
-        name: user.name || null,
-      });
-    } catch (inner) {
-      // Si también falla la deserialización del cuerpo, devolvemos un 500
-      return NextResponse.json(
-        { error: "Error al actualizar perfil" },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({
+      id: "demo-profile",
+      userId: user.id,
+      username: username ?? user.username ?? null,
+      bio: bio ?? null,
+      avatarUrl: avatarUrl ?? null,
+      socialLinks: socialLinks ?? [],
+      settings: settings ?? {},
+      title: title ?? null,
+      theme: theme ?? null,
+      name: user.name || null,
+    });
   }
 }
 
