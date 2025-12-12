@@ -13,7 +13,7 @@
     "db:verify-structure": "node scripts/verify-db-structure.js"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.36.0",
+    "@clerk/nextjs": "^6.36.2",
     "@neondatabase/serverless": "^1.0.2",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-select": "^2.2.6",
@@ -28,13 +28,11 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.556.0",
     "next": "^14.2.35",
-    "node": "^24.12.0",
     "pg": "^8.16.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^3.4.0",
-    "tailwindcss-animate": "^1.0.7",
-    "v20": "^0.1.0"
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
