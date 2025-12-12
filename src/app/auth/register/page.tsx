@@ -1,13 +1,10 @@
-
-    import React from "react"; // Asegurando que React esté importado
-    
+// src/app/auth/register/page.tsx
 "use client";
 
-import { SignUp } from "@clerk/nextjs";
+import { SignIn } from "@clerk/nextjs";
 
-export default function RegisterPage() {
+export default function LoginPage() {
   return (
-      
     <main className="min-h-screen flex items-center justify-center bg-slate-950">
       <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-xl">
         <header className="mb-6">
