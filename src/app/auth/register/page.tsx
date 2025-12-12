@@ -6,7 +6,8 @@
 import { SignUp } from "@clerk/nextjs";
 
 export default function RegisterPage() {
-  return {
+  return (
+      
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-white px-4">
       <div className="w-full max-w-md">
         <SignUp
@@ -34,5 +35,5 @@ export default function RegisterPage() {
         />
       </div>
     </div>
-  };
+  );
 }
