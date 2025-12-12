@@ -6,6 +6,9 @@
       "DOM.Iterable",
       "ES2020"
     ],
+    "jsx": "react-jsx"  // Esta línea es necesaria para que JSX funcione correctamente
+  }
+}
     "allowJs": false,
     "skipLibCheck": true,
     "strict": true,
