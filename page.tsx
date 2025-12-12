@@ -1,15 +1,19 @@
+
+    import React from "react"; // Asegurando que React esté importado
+    
 "use client";
 
-import { SignIn } from "@clerk/nextjs";
+import { SignUp } from "@clerk/nextjs";
 
-export default function LoginForm() {
+export default function RegisterPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-white px-4">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-white px-4">
       <div className="w-full max-w-md">
-        <SignIn
-          path="/auth/login"
-          signUpUrl="/auth/register"
-          // `redirectUrl` is deprecated; replace with `fallbackRedirectUrl` per Clerk docs
+        <SignUp
+          path="/auth/register"
+          routing="path"
+          signInUrl="/auth/login"
+          // Clerk deprecated `redirectUrl`, use `fallbackRedirectUrl` instead.  See docs for details.
           fallbackRedirectUrl="/dashboard"
           appearance={{
   elements: {

@@ -15,7 +15,7 @@ export default function WhatsappTestMessagePanel() {
   const [phoneNumberId, setPhoneNumberId] = useState("");
   const [wabaId, setWabaId] = useState("");
   const [to, setTo] = useState("");
-  const [message, setMessage] = useState("Mensaje de prueba de ReLead");
+  const [message, setMessage] = useState("Selecciona una plantilla de marketing o escribe un mensaje personalizado");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TestMessageResult | null>(null);
