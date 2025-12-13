@@ -20,7 +20,7 @@ import { cn } from "@/components/lib/utils";
 const navItems = [
   { label: "Inicio", href: "/dashboard" },
   { label: "Páginas", href: "/dashboard/link-pages" },
-  { label: "Comercial", href: "/dashboard/commercial" },
+  { label: "WABA", href: "/dashboard/waba" },
   // La ruta de Ajustes apunta directamente a /dashboard/settings, ya que
   // toda la configuración del usuario ahora se gestiona en esa página.
   { label: "Ajustes", href: "/dashboard/settings" },

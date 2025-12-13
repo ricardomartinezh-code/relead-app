@@ -2,6 +2,25 @@
 
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
+import {
+  AtSign,
+  Facebook,
+  Ghost,
+  Github,
+  Globe,
+  Instagram,
+  Link2,
+  Mail,
+  MessageCircle,
+  MessageSquare,
+  Music,
+  Pin,
+  Send,
+  Twitter,
+  Tv,
+  Youtube,
+  Linkedin,
+} from "lucide-react";
 import type {
   BlockStyleConfig,
   LinkBlockWithItems,
@@ -32,8 +51,87 @@ const SOCIAL_ICON_MAP: Record<string, string> = {
   tiktok: "🎵",
   x: "🐦",
   youtube: "▶️",
+  facebook: "📘",
+  linkedin: "💼",
+  whatsapp: "💬",
+  telegram: "✈️",
+  spotify: "🎧",
+  apple_music: "🎶",
+  snapchat: "👻",
+  twitch: "📺",
+  discord: "💬",
+  pinterest: "📌",
+  threads: "🧵",
+  soundcloud: "☁️",
+  github: "🐙",
+  website: "🌐",
+  email: "✉️",
   custom: "🔗",
 };
+
+const SOCIAL_ICON_COMPONENTS: Record<string, any> = {
+  instagram: Instagram,
+  x: Twitter,
+  youtube: Youtube,
+  facebook: Facebook,
+  linkedin: Linkedin,
+  whatsapp: MessageCircle,
+  telegram: Send,
+  spotify: Music,
+  apple_music: Music,
+  tiktok: Music,
+  snapchat: Ghost,
+  twitch: Tv,
+  discord: MessageSquare,
+  pinterest: Pin,
+  threads: AtSign,
+  soundcloud: Music,
+  github: Github,
+  website: Globe,
+  email: Mail,
+  custom: Link2,
+};
+
+async function trackLinkItemClick(itemId: string) {
+  try {
+    await fetch("/api/track/link-item-click", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itemId }),
+      keepalive: true,
+    });
+  } catch {
+    // ignore
+  }
+}
+
+function renderSocialIcon(params: {
+  type: string;
+  imageUrl?: string | null;
+  className?: string;
+  size?: number;
+}) {
+  const { type, imageUrl, className = "", size = 18 } = params;
+
+  if (imageUrl) {
+    return (
+      <Image
+        src={imageUrl}
+        alt={`${type} icon`}
+        width={size}
+        height={size}
+        className={["rounded object-cover", className].filter(Boolean).join(" ")}
+      />
+    );
+  }
+
+  const Icon = SOCIAL_ICON_COMPONENTS[type];
+  if (Icon) {
+    return <Icon className={className} style={{ width: size, height: size }} aria-hidden="true" />;
+  }
+
+  return <span className={className}>{SOCIAL_ICON_MAP[type] || "🔗"}</span>;
+}
 
 function getAvatarInitials(title?: string | null) {
   if (!title) return "";
@@ -141,6 +239,12 @@ function renderLinks(
             href={item.url || undefined}
             target="_blank"
             rel="noreferrer"
+            onClick={(event) => {
+              if (!item.url) return;
+              event.preventDefault();
+              void trackLinkItemClick(item.id);
+              window.open(item.url, "_blank", "noopener,noreferrer");
+            }}
             className="flex w-full items-center justify-between rounded-lg bg-white/5 px-4 py-3 text-sm font-medium text-slate-50 transition hover:translate-y-[1px] hover:bg-white/10"
             style={{
               backgroundColor: design?.buttonBg,
@@ -148,7 +252,21 @@ function renderLinks(
             }}
           >
             <span className="truncate">{item.label}</span>
-            {item.icon && <span className="ml-2 text-base">{item.icon}</span>}
+            <span className="ml-2 inline-flex items-center">
+              {item.imageUrl ? (
+                <Image
+                  src={item.imageUrl}
+                  alt={`${item.label} icon`}
+                  width={18}
+                  height={18}
+                  className="h-[18px] w-[18px] rounded object-cover"
+                />
+              ) : item.icon && SOCIAL_ICON_COMPONENTS[item.icon] ? (
+                renderSocialIcon({ type: item.icon, size: 18, className: "text-current" })
+              ) : item.icon ? (
+                <span className="text-base">{item.icon}</span>
+              ) : null}
+            </span>
           </a>
         ))}
       </div>
@@ -281,7 +399,7 @@ function renderSocialBlock(
               rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm text-slate-50"
             >
-              <span>{SOCIAL_ICON_MAP[link.type] || "🔗"}</span>
+              {renderSocialIcon({ type: link.type, imageUrl: link.imageUrl, size: 16 })}
               <span className="max-w-[150px] truncate">{link.type}</span>
             </a>
           ))}
@@ -296,7 +414,12 @@ function renderSocialBlock(
               rel="noreferrer"
               className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-lg"
             >
-              {SOCIAL_ICON_MAP[link.type] || "🔗"}
+              {renderSocialIcon({
+                type: link.type,
+                imageUrl: link.imageUrl,
+                size: link.imageUrl ? 28 : 18,
+                className: link.imageUrl ? "h-7 w-7" : "text-slate-50",
+              })}
             </a>
           ))}
         </div>

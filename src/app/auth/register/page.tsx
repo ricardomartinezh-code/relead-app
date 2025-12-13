@@ -2,43 +2,28 @@
 "use client";
 
 import { SignUp } from "@clerk/nextjs";
+import { clerkAuthAppearance } from "@/lib/clerk-appearance";
 
 export default function RegisterPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-white px-4">
-      <div className="w-full max-w-md">
-        {/*
-          Configure the Clerk SignUp component using the newer `fallbackRedirectUrl` prop
-          and a single `elements` object. Avoid nesting `elements` within another
-          `elements` object as that will cause a syntax error during compilation.
-
-          We provide two style overrides here:
-          - `formButton` tweaks the base button that Clerk renders (e.g. the social login button)
-          - `formButtonPrimary` adjusts the primary action button used in the form
-
-          These styles ensure the buttons integrate nicely with the overall color scheme.
-        */}
+    <main className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+      <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-xl">
+        <header className="mb-6">
+          <h1 className="text-2xl font-semibold text-slate-50">
+            Crea tu cuenta en ReLead
+          </h1>
+          <p className="mt-1 text-sm text-slate-400">
+            Regístrate para empezar a crear y medir tus enlaces.
+          </p>
+        </header>
         <SignUp
           path="/auth/register"
           routing="path"
           signInUrl="/auth/login"
           fallbackRedirectUrl="/dashboard"
-          appearance={{
-            elements: {
-              formButton: {
-                backgroundColor: "#1877f2",
-                color: "#fff",
-                borderRadius: "4px",
-                fontSize: "16px",
-                fontWeight: "bold",
-                height: "40px",
-                padding: "0 24px",
-              },
-              formButtonPrimary: "bg-slate-900 hover:bg-slate-800 text-white",
-            },
-          }}
+          appearance={clerkAuthAppearance}
         />
       </div>
-    </div>
+    </main>
   );
 }

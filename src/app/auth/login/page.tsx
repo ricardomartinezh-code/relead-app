@@ -2,6 +2,7 @@
 "use client";
 
 import { SignIn } from "@clerk/nextjs";
+import { clerkAuthAppearance } from "@/lib/clerk-appearance";
 
 export default function LoginPage() {
   return (
@@ -24,17 +25,7 @@ export default function LoginPage() {
           // `fallbackRedirectUrl` instead to avoid runtime warnings.  See
           // https://clerk.com/docs/guides/custom-redirects#redirect-url-props for details.
           fallbackRedirectUrl="/dashboard"
-          appearance={{
-            elements: {
-              formButtonPrimary:
-                "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-medium",
-              card: "bg-transparent shadow-none p-0",
-              headerTitle: "hidden",
-              headerSubtitle: "hidden",
-              socialButtonsBlockButton:
-                "bg-slate-800 hover:bg-slate-700 border border-slate-700",
-            },
-          }}
+          appearance={clerkAuthAppearance}
         />
       </div>
     </main>

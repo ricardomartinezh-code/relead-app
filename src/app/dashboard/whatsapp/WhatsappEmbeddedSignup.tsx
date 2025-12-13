@@ -13,7 +13,8 @@ const WHATSAPP_CONFIG_ID_NO_CTWA =
 const WHATSAPP_EXTRAS = {
   featureType: "whatsapp_business_app_onboarding",
   sessionInfoVersion: "3",
-  version: "v2",
+  version: "v3",
+  features: [{ name: "app_only_install" }, { name: "marketing_messages_lite" }],
 };
 
 type EmbeddedSignupMessage = any;
@@ -191,36 +192,25 @@ export default function WhatsappEmbeddedSignup() {
     );
   };
 
-  const launchWhatsAppSignupCtwa = () => {
-    launchWhatsAppSignupWithConfig(WHATSAPP_CONFIG_ID_CTWA, "CTWA");
-  };
-
-  const launchWhatsAppSignupNoCtwa = () => {
-    launchWhatsAppSignupWithConfig(WHATSAPP_CONFIG_ID_NO_CTWA, "sin CTWA");
+  const launchWhatsAppSignup = () => {
+    const preferredConfig = WHATSAPP_CONFIG_ID_CTWA || WHATSAPP_CONFIG_ID_NO_CTWA;
+    launchWhatsAppSignupWithConfig(
+      preferredConfig,
+      WHATSAPP_CONFIG_ID_CTWA ? "CTWA" : "sin CTWA"
+    );
   };
 
   return (
     <div className="space-y-4">
       <button
         type="button"
-        onClick={launchWhatsAppSignupCtwa}
+        onClick={launchWhatsAppSignup}
         disabled={isSubmitting || !isMetaSdkReady}
         className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
         {isSubmitting
           ? "Conectando con WhatsApp..."
-          : "Conectar cuenta de WhatsApp con CTWA"}
-      </button>
-
-      <button
-        type="button"
-        onClick={launchWhatsAppSignupNoCtwa}
-        disabled={isSubmitting || !isMetaSdkReady}
-        className="mt-2 rounded bg-blue-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-      >
-        {isSubmitting
-          ? "Conectando con WhatsApp..."
-          : "Conectar cuenta de WhatsApp sin CTWA"}
+          : "Conectar WhatsApp Business"}
       </button>
 
       {!isMetaSdkReady && !submitError && (

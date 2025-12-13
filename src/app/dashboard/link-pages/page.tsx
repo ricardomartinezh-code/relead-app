@@ -28,6 +28,7 @@ interface ApiPageResponse {
 interface SocialLink {
   type: string;
   url: string;
+  imageUrl?: string | null;
 }
 
 const isProfileResponse = (
@@ -104,11 +105,13 @@ function DesignControls({
   design,
   onChange,
   onSave,
+  onBackgroundImageUpload,
   disabled,
 }: {
   design: LinkPageDesign;
   onChange: (design: LinkPageDesign) => void;
   onSave: () => void;
+  onBackgroundImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   disabled?: boolean;
 }) {
   const background = design.background || {};
@@ -211,6 +214,15 @@ function DesignControls({
                 onChange={(e) => updateBackground({ imageUrl: e.target.value })}
                 className="rounded-md border border-slate-300 px-2 py-1 text-sm"
                 placeholder="https://..."
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              Subir imagen
+              <input
+                type="file"
+                accept="image/*"
+                onChange={onBackgroundImageUpload}
+                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm"
               />
             </label>
             <label className="flex flex-col gap-1">
@@ -427,7 +439,29 @@ export default function LinkPagesScreen() {
   const [socialSaving, setSocialSaving] = useState(false);
   const [socialError, setSocialError] = useState<string | null>(null);
   const [socialMessage, setSocialMessage] = useState<string | null>(null);
-  const SOCIAL_OPTIONS = ["instagram", "tiktok", "x", "youtube", "custom"];
+  const [socialIconUploading, setSocialIconUploading] = useState<Record<number, boolean>>({});
+  const SOCIAL_OPTIONS = [
+    "instagram",
+    "tiktok",
+    "x",
+    "youtube",
+    "facebook",
+    "linkedin",
+    "whatsapp",
+    "telegram",
+    "spotify",
+    "apple_music",
+    "snapchat",
+    "twitch",
+    "discord",
+    "pinterest",
+    "threads",
+    "soundcloud",
+    "github",
+    "website",
+    "email",
+    "custom",
+  ];
 
   // Cargar redes sociales del perfil al montar el componente.
   useEffect(() => {
@@ -443,7 +477,11 @@ export default function LinkPagesScreen() {
         const data = await res.json();
         setSocialLinks(
           Array.isArray(data.socialLinks)
-            ? data.socialLinks.map((l: any) => ({ type: l.type || "custom", url: l.url || "" }))
+            ? data.socialLinks.map((l: any) => ({
+                type: l.type || "custom",
+                url: l.url || "",
+                imageUrl: l.imageUrl || null,
+              }))
             : []
         );
       } catch (err: any) {
@@ -480,6 +518,23 @@ export default function LinkPagesScreen() {
     });
   };
 
+  const handleSocialImageUpload = async (index: number, file: File) => {
+    try {
+      setSocialIconUploading((prev) => ({ ...prev, [index]: true }));
+      setSocialError(null);
+      const url = await uploadImageFile(file);
+      setSocialLinks((prev) => {
+        const next = [...prev];
+        next[index] = { ...next[index], imageUrl: url };
+        return next;
+      });
+    } catch (err: any) {
+      setSocialError(err.message || "Error subiendo imagen");
+    } finally {
+      setSocialIconUploading((prev) => ({ ...prev, [index]: false }));
+    }
+  };
+
   /**
    * Envía las redes sociales actualizadas al backend para persistir los cambios.
    */
@@ -506,6 +561,17 @@ export default function LinkPagesScreen() {
       setSocialSaving(false);
     }
   };
+
+  async function uploadImageFile(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/upload/image", { method: "POST", body: formData });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.url) {
+      throw new Error(data?.error || "No se pudo subir la imagen");
+    }
+    return data.url as string;
+  }
 
   useEffect(() => {
     const loadPages = async () => {
@@ -766,7 +832,9 @@ export default function LinkPagesScreen() {
       // the icon.  Otherwise both remain null.
       let icon: string | null = null;
       let imageUrl: string | null = null;
-      if (draft.iconType && draft.iconType !== "" && draft.iconType !== "custom") {
+      if (draft.iconType === "emoji" && draft.icon) {
+        icon = draft.icon;
+      } else if (draft.iconType && draft.iconType !== "" && draft.iconType !== "custom") {
         icon = draft.iconType;
       }
       if (draft.iconType === "custom" && draft.imageUrl) {
@@ -823,8 +891,8 @@ export default function LinkPagesScreen() {
 
   /**
    * Carga un archivo de imagen para un ícono personalizado.  Cuando se
-   * selecciona un archivo, se envía al endpoint de subida de avatares
-   * (/api/upload/avatar), que a su vez sube la imagen a Cloudinary y
+   * selecciona un archivo, se envía al endpoint de subida de imágenes
+   * (/api/upload/image), que a su vez sube la imagen a Cloudinary y
    * devuelve la URL segura.  El resultado se almacena en el draft del
    * bloque correspondiente con iconType "custom" y se borra el valor
    * de icon por defecto.
@@ -836,18 +904,7 @@ export default function LinkPagesScreen() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch("/api/upload/avatar", {
-        method: "POST",
-        body: formData,
-      });
-      if (!res.ok) {
-        console.error("Error subiendo imagen de ícono");
-        return;
-      }
-      const data = await res.json();
-      if (!data.url) return;
+      const url = await uploadImageFile(file);
       setLinkDrafts((prev) => {
         const prevDraft = prev[blockId] || { label: "", url: "" };
         return {
@@ -855,11 +912,36 @@ export default function LinkPagesScreen() {
           [blockId]: {
             ...prevDraft,
             iconType: "custom",
-            imageUrl: data.url,
+            imageUrl: url,
             icon: undefined,
           },
         };
       });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleBackgroundImageUpload = async (e: any) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const url = await uploadImageFile(file);
+      setDesignDraft((prev) => ({
+        ...prev,
+        background: { ...(prev.background || {}), type: "image", imageUrl: url },
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleBlockImageUpload = async (e: any, blockId: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const url = await uploadImageFile(file);
+      updateBlockConfigLocal(blockId, (config) => ({ ...config, imageUrl: url }));
     } catch (err) {
       console.error(err);
     }
@@ -1281,6 +1363,7 @@ export default function LinkPagesScreen() {
             design={designDraft}
             disabled={!currentPage}
             onChange={(d) => setDesignDraft(d)}
+            onBackgroundImageUpload={handleBackgroundImageUpload}
             onSave={async () => {
               if (!currentPage) return;
               setError(null);
@@ -1566,6 +1649,15 @@ export default function LinkPagesScreen() {
                           />
                         </label>
                         <label className="flex flex-col gap-1">
+                          Subir imagen
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleBlockImageUpload(e as any, block.id)}
+                            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1">
                           Texto alternativo
                           <input
                             type="text"
@@ -1771,9 +1863,41 @@ export default function LinkPagesScreen() {
                             <option value="x">X/Twitter</option>
                             <option value="youtube">YouTube</option>
                             <option value="whatsapp">WhatsApp</option>
+                            <option value="facebook">Facebook</option>
+                            <option value="linkedin">LinkedIn</option>
+                            <option value="telegram">Telegram</option>
+                            <option value="spotify">Spotify</option>
+                            <option value="apple_music">Apple Music</option>
+                            <option value="snapchat">Snapchat</option>
+                            <option value="twitch">Twitch</option>
+                            <option value="discord">Discord</option>
+                            <option value="pinterest">Pinterest</option>
+                            <option value="threads">Threads</option>
+                            <option value="soundcloud">SoundCloud</option>
+                            <option value="github">GitHub</option>
+                            <option value="website">Website</option>
+                            <option value="email">Email</option>
+                            <option value="emoji">Emoji…</option>
                             <option value="custom">Personalizado…</option>
                           </select>
                         </label>
+                        {linkDrafts[block.id]?.iconType === "emoji" && (
+                          <input
+                            type="text"
+                            value={linkDrafts[block.id]?.icon || ""}
+                            onChange={(e) =>
+                              setLinkDrafts((prev) => ({
+                                ...prev,
+                                [block.id]: {
+                                  ...prev[block.id],
+                                  icon: e.target.value,
+                                },
+                              }))
+                            }
+                            className="w-24 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                            placeholder="🙂"
+                          />
+                        )}
                         {/* Campo de carga solo cuando el usuario selecciona un icono personalizado */}
                         {linkDrafts[block.id]?.iconType === "custom" && (
                           <input

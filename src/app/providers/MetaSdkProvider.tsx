@@ -46,7 +46,7 @@ export function MetaSdkProvider({ children }: { children: ReactNode }) {
       (window as any).FB.init({
         appId: META_APP_ID,
         xfbml: false,
-        version: "v19.0",
+        version: "v24.0",
       });
 
       setIsReady(true);

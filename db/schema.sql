@@ -32,7 +32,9 @@ CREATE TABLE IF NOT EXISTS profiles (
   bio text NULL,
   avatar_url text NULL,
   slug text NOT NULL UNIQUE,
-  theme text NOT NULL DEFAULT 'default'
+  theme text NOT NULL DEFAULT 'default',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 -- Nuevos campos para páginas tipo link-in-bio
@@ -41,7 +43,9 @@ ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS bio text,
   ADD COLUMN IF NOT EXISTS avatar_url text,
   ADD COLUMN IF NOT EXISTS social_links jsonb DEFAULT '[]'::jsonb,
-  ADD COLUMN IF NOT EXISTS settings jsonb DEFAULT '{}'::jsonb;
+  ADD COLUMN IF NOT EXISTS settings jsonb DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
 
 -- Compatibilidad para clientes (p.ej. Prisma) que buscan una tabla "Profile"
 -- en mayúscula. Creamos una vista que expone las mismas columnas para evitar
@@ -177,6 +181,19 @@ CREATE TABLE IF NOT EXISTS link_items (
 CREATE INDEX IF NOT EXISTS idx_link_items_block_position
   ON link_items(block_id, position);
 
+-- Clicks en ítems (para analíticas en páginas personalizadas)
+CREATE TABLE IF NOT EXISTS link_item_clicks (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  item_id uuid NOT NULL REFERENCES link_items(id) ON DELETE CASCADE,
+  referrer text NULL,
+  user_agent text NULL,
+  ip text NULL,
+  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_link_item_clicks_item_time
+  ON link_item_clicks(item_id, created_at);
+
 -- Cuentas de WhatsApp
 CREATE TABLE IF NOT EXISTS whats_app_accounts (
   id uuid PRIMARY KEY,
@@ -186,6 +203,33 @@ CREATE TABLE IF NOT EXISTS whats_app_accounts (
   access_token text NOT NULL,
   expires_in integer NULL
 );
+
+ALTER TABLE IF EXISTS whats_app_accounts
+  ADD COLUMN IF NOT EXISTS user_id uuid NULL REFERENCES users(id) ON DELETE CASCADE;
+
+CREATE INDEX IF NOT EXISTS idx_whats_app_accounts_user_id
+  ON whats_app_accounts(user_id);
+
+-- Mensajes WhatsApp (para UI tipo messenger).
+-- Nota: WhatsApp Cloud API requiere webhooks para recepción; este registro
+-- funciona como historial persistente (inbound/outbound).
+CREATE TABLE IF NOT EXISTS whatsapp_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  phone_number_id text NOT NULL,
+  contact text NOT NULL,
+  direction text NOT NULL,
+  message_type text NOT NULL DEFAULT 'text',
+  text_body text NULL,
+  template_name text NULL,
+  template_language text NULL,
+  meta_message_id text NULL,
+  raw jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_user_phone_contact_time
+  ON whatsapp_messages(user_id, phone_number_id, contact, created_at);
 
 COMMIT;
 

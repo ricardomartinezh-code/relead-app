@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 
 /**
@@ -50,6 +50,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   // Carga inicial de datos del perfil
   useEffect(() => {
@@ -84,17 +86,39 @@ export default function SettingsPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Lógica para cambiar la foto de perfil reutilizando el flujo existente (si
-  // está disponible en la ventana global).  Se aprovecha la función
-  // `openAvatarUpload` definida en otro lugar del proyecto.
-  const handleAvatarChange = () => {
-    const openAvatarUpload = (window as any).openAvatarUpload;
-    if (typeof openAvatarUpload === "function") {
-      openAvatarUpload((newUrl: string) => {
-        handleChange("avatarUrl", newUrl);
+  const uploadAvatarFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/upload/avatar", { method: "POST", body: formData });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.url) {
+      throw new Error(data?.error || "No se pudo subir el avatar");
+    }
+    return data.url as string;
+  };
+
+  const handleAvatarFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingAvatar(true);
+      setError(null);
+      setMessage(null);
+      const url = await uploadAvatarFile(file);
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({ avatarUrl: url }),
       });
-    } else {
-      alert("Flujo de carga de avatar no disponible en esta vista.");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "No se pudo guardar el avatar");
+      handleChange("avatarUrl", url);
+      setMessage("Avatar actualizado");
+    } catch (err: any) {
+      setError(err.message || "Error subiendo avatar");
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
     }
   };
 
@@ -205,11 +229,18 @@ export default function SettingsPage() {
                 )}
                 <button
                   type="button"
-                  onClick={handleAvatarChange}
+                  onClick={() => avatarInputRef.current?.click()}
                   className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
                 >
-                  Cambiar foto
+                  {uploadingAvatar ? "Subiendo..." : "Cambiar foto"}
                 </button>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarFileChange}
+                />
               </div>
 
               <div className="space-y-4">

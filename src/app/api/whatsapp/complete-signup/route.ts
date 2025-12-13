@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { upsertWhatsAppAccount } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import { upsertWhatsAppAccountForUser } from "@/lib/db";
 
 type RequestBody = {
   code?: string;
@@ -10,6 +11,11 @@ type RequestBody = {
 };
 
 export async function POST(request: Request) {
+  const user = await getCurrentUser();
+  if (!user?.id) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
   let body: RequestBody;
 
   try {
@@ -78,7 +84,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const account = await upsertWhatsAppAccount(
+    const account = await upsertWhatsAppAccountForUser(
+      user.id,
       phoneNumberId,
       wabaId,
       tokenData.access_token,
@@ -88,11 +95,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      phoneNumberId,
-      wabaId,
-      expiresIn: account.expiresIn,
+      phone_number_id: phoneNumberId,
+      waba_id: wabaId,
+      expires_in: account.expiresIn,
       label: account.label,
-      accessTokenPreview: tokenData.access_token.substring(0, 10),
+      access_token_preview: tokenData.access_token.substring(0, 10),
     });
   } catch (error) {
     // eslint-disable-next-line no-console

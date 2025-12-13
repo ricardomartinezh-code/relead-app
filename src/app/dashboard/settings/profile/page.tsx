@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 
 interface SocialLink {
   type: string;
   url: string;
+  imageUrl?: string | null;
 }
 
 interface ProfileForm {
@@ -17,7 +18,28 @@ interface ProfileForm {
   settings: any;
 }
 
-const SOCIAL_OPTIONS = ["instagram", "tiktok", "x", "youtube", "custom"];
+const SOCIAL_OPTIONS = [
+  "instagram",
+  "tiktok",
+  "x",
+  "youtube",
+  "facebook",
+  "linkedin",
+  "whatsapp",
+  "telegram",
+  "spotify",
+  "apple_music",
+  "snapchat",
+  "twitch",
+  "discord",
+  "pinterest",
+  "threads",
+  "soundcloud",
+  "github",
+  "website",
+  "email",
+  "custom",
+];
 
 export default function ProfileSettingsPage() {
   const [profileForm, setProfileForm] = useState<ProfileForm>({
@@ -31,6 +53,9 @@ export default function ProfileSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingSocial, setUploadingSocial] = useState<Record<number, boolean>>({});
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -46,7 +71,13 @@ export default function ProfileSettingsPage() {
           username: data.username || "",
           bio: data.bio || "",
           avatarUrl: data.avatarUrl || null,
-          socialLinks: Array.isArray(data.socialLinks) ? data.socialLinks : [],
+          socialLinks: Array.isArray(data.socialLinks)
+            ? data.socialLinks.map((l: any) => ({
+                type: l.type || "custom",
+                url: l.url || "",
+                imageUrl: l.imageUrl || null,
+              }))
+            : [],
           settings: data.settings || {},
         });
       } catch (err: any) {
@@ -85,15 +116,66 @@ export default function ProfileSettingsPage() {
     }));
   };
 
-  const handleAvatarChange = () => {
-    // Reutiliza el flujo de subida existente si está disponible en el cliente
-    const openAvatarUpload = (window as any).openAvatarUpload;
-    if (typeof openAvatarUpload === "function") {
-      openAvatarUpload((newUrl: string) => {
-        handleChange("avatarUrl", newUrl);
+  const uploadImageFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/upload/image", { method: "POST", body: formData });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.url) {
+      throw new Error(data?.error || "No se pudo subir la imagen");
+    }
+    return data.url as string;
+  };
+
+  const uploadAvatarFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/upload/avatar", { method: "POST", body: formData });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.url) {
+      throw new Error(data?.error || "No se pudo subir el avatar");
+    }
+    return data.url as string;
+  };
+
+  const handleAvatarFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingAvatar(true);
+      setError(null);
+      const url = await uploadAvatarFile(file);
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({ avatarUrl: url }),
       });
-    } else {
-      alert("Flujo de carga de avatar no disponible en esta vista.");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "No se pudo guardar el avatar");
+      handleChange("avatarUrl", url);
+      setMessage("Avatar actualizado");
+    } catch (err: any) {
+      setError(err.message || "Error subiendo avatar");
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
+
+  const handleSocialImageUpload = async (index: number, file: File) => {
+    try {
+      setUploadingSocial((prev) => ({ ...prev, [index]: true }));
+      setError(null);
+      const url = await uploadImageFile(file);
+      setProfileForm((prev) => {
+        const next = [...prev.socialLinks];
+        next[index] = { ...next[index], imageUrl: url };
+        return { ...prev, socialLinks: next };
+      });
+    } catch (err: any) {
+      setError(err.message || "Error subiendo imagen");
+    } finally {
+      setUploadingSocial((prev) => ({ ...prev, [index]: false }));
     }
   };
 
@@ -197,11 +279,18 @@ export default function ProfileSettingsPage() {
               )}
               <button
                 type="button"
-                onClick={handleAvatarChange}
+                onClick={() => avatarInputRef.current?.click()}
                 className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
               >
-                Cambiar avatar
+                {uploadingAvatar ? "Subiendo..." : "Cambiar avatar"}
               </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarFileChange}
+              />
             </div>
 
             <div className="space-y-4">
@@ -277,6 +366,38 @@ export default function ProfileSettingsPage() {
                   >
                     Eliminar
                   </button>
+                  <div className="md:col-span-3 flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      {link.imageUrl ? (
+                        <Image
+                          src={link.imageUrl}
+                          alt={`${link.type} icon`}
+                          width={28}
+                          height={28}
+                          className="h-7 w-7 rounded object-cover"
+                        />
+                      ) : (
+                        <div className="h-7 w-7 rounded bg-slate-200" />
+                      )}
+                      <span className="text-xs text-slate-600">
+                        Icono (opcional)
+                      </span>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        void handleSocialImageUpload(index, file);
+                        e.target.value = "";
+                      }}
+                      className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs"
+                    />
+                    {uploadingSocial[index] && (
+                      <span className="text-xs text-slate-500">Subiendo…</span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

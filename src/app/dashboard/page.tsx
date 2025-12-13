@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import AnalyticsOverview from "./AnalyticsOverview";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -68,34 +69,7 @@ export default async function DashboardPage() {
           <CardContent className="relative space-y-4">
             {/* Contenedor de gráfico y métricas */}
             <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-4 shadow-inner">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between text-xs text-slate-600">
-                  <span className="flex items-center gap-1">
-                    <Activity className="h-3.5 w-3.5" />
-                    Analytics
-                  </span>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700">
-                    Tiempo real
-                  </span>
-                </div>
-                {/* Gráfico de ejemplo */}
-                <div className="mt-3 h-24 rounded-xl bg-[conic-gradient(at_left,_#e2e8f0,_#cbd5e1,_#e2e8f0)] opacity-70" />
-                {/* Métricas básicas */}
-                <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-slate-600">
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 py-2">
-                    <p className="text-sm font-semibold text-slate-900">—</p>
-                    <p>Clics</p>
-                  </div>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 py-2">
-                    <p className="text-sm font-semibold text-slate-900">—</p>
-                    <p>CTR</p>
-                  </div>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 py-2">
-                    <p className="text-sm font-semibold text-slate-900">—</p>
-                    <p>Top enlace</p>
-                  </div>
-                </div>
-              </div>
+              <AnalyticsOverview />
             </div>
           </CardContent>
         </Card>

@@ -62,8 +62,18 @@ export type LinkClickRecord = {
   createdAt: Date;
 };
 
+export type LinkItemClickRecord = {
+  id: string;
+  itemId: string;
+  referrer?: string | null;
+  userAgent?: string | null;
+  ip?: string | null;
+  createdAt: Date;
+};
+
 export type WhatsAppAccountRecord = {
   id: string;
+  userId?: string | null;
   phoneNumberId: string;
   wabaId?: string;
   label?: string | null;
@@ -587,6 +597,31 @@ export async function recordLinkClick(
 }
 
 /**
+ * Registrar clic en ítem (páginas personalizadas)
+ */
+export async function recordLinkItemClick(
+  itemId: string,
+  referrer?: string | null,
+  userAgent?: string | null,
+  ip?: string | null
+): Promise<LinkItemClickRecord> {
+  try {
+    const id = randomUUID();
+    const result = await pool.query(
+      `INSERT INTO link_item_clicks (id, item_id, referrer, user_agent, ip, created_at)
+       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+       RETURNING id, item_id AS "itemId", referrer, user_agent AS "userAgent", ip, created_at AS "createdAt"`,
+      [id, itemId, referrer || null, userAgent || null, ip || null]
+    );
+
+    return result.rows[0];
+  } catch (error) {
+    console.error("Error registrando clic de ítem:", error);
+    throw error;
+  }
+}
+
+/**
  * Obtener cuenta de WhatsApp por ID de número telefónico
  */
 export async function findWhatsAppAccountByPhoneNumberId(
@@ -594,12 +629,43 @@ export async function findWhatsAppAccountByPhoneNumberId(
 ): Promise<WhatsAppAccountRecord | null> {
   try {
     const result = await pool.query(
-      "SELECT id, phone_number_id AS \"phoneNumberId\", waba_id AS \"wabaId\", label, access_token AS \"accessToken\", expires_in AS \"expiresIn\" FROM whats_app_accounts WHERE phone_number_id = $1 LIMIT 1",
+      "SELECT id, user_id AS \"userId\", phone_number_id AS \"phoneNumberId\", waba_id AS \"wabaId\", label, access_token AS \"accessToken\", expires_in AS \"expiresIn\" FROM whats_app_accounts WHERE phone_number_id = $1 LIMIT 1",
       [phoneNumberId]
     );
     return result.rows[0] || null;
   } catch (error) {
     console.error("Error obteniendo cuenta de WhatsApp:", error);
+    throw error;
+  }
+}
+
+export async function findWhatsAppAccountByPhoneNumberIdForUser(
+  userId: string,
+  phoneNumberId: string
+): Promise<WhatsAppAccountRecord | null> {
+  try {
+    const result = await pool.query(
+      "SELECT id, user_id AS \"userId\", phone_number_id AS \"phoneNumberId\", waba_id AS \"wabaId\", label, access_token AS \"accessToken\", expires_in AS \"expiresIn\" FROM whats_app_accounts WHERE user_id = $1 AND phone_number_id = $2 LIMIT 1",
+      [userId, phoneNumberId]
+    );
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error("Error obteniendo cuenta de WhatsApp (por usuario):", error);
+    throw error;
+  }
+}
+
+export async function listWhatsAppAccountsByUserId(
+  userId: string
+): Promise<WhatsAppAccountRecord[]> {
+  try {
+    const result = await pool.query(
+      "SELECT id, user_id AS \"userId\", phone_number_id AS \"phoneNumberId\", waba_id AS \"wabaId\", label, access_token AS \"accessToken\", expires_in AS \"expiresIn\" FROM whats_app_accounts WHERE user_id = $1 ORDER BY phone_number_id ASC",
+      [userId]
+    );
+    return result.rows || [];
+  } catch (error) {
+    console.error("Error listando cuentas de WhatsApp:", error);
     throw error;
   }
 }
@@ -621,7 +687,7 @@ export async function upsertWhatsAppAccount(
        VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (phone_number_id) DO UPDATE
        SET access_token = $5, expires_in = $6, waba_id = $3, label = $4
-       RETURNING id, phone_number_id AS "phoneNumberId", waba_id AS "wabaId", label, access_token AS "accessToken", expires_in AS "expiresIn"`,
+       RETURNING id, user_id AS "userId", phone_number_id AS "phoneNumberId", waba_id AS "wabaId", label, access_token AS "accessToken", expires_in AS "expiresIn"`,
       [id, phoneNumberId, wabaId, label || null, accessToken, expiresIn || null]
     );
     return result.rows[0];
@@ -629,6 +695,166 @@ export async function upsertWhatsAppAccount(
     console.error("Error actualizando cuenta de WhatsApp:", error);
     throw error;
   }
+}
+
+export async function upsertWhatsAppAccountForUser(
+  userId: string,
+  phoneNumberId: string,
+  wabaId: string,
+  accessToken: string,
+  label?: string | null,
+  expiresIn?: number | null
+): Promise<WhatsAppAccountRecord> {
+  try {
+    const id = randomUUID();
+    const result = await pool.query(
+      `INSERT INTO whats_app_accounts (id, user_id, phone_number_id, waba_id, label, access_token, expires_in)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (phone_number_id) DO UPDATE
+       SET user_id = $2, access_token = $6, expires_in = $7, waba_id = $4, label = $5
+       WHERE whats_app_accounts.user_id IS NULL OR whats_app_accounts.user_id = $2
+       RETURNING id, user_id AS "userId", phone_number_id AS "phoneNumberId", waba_id AS "wabaId", label, access_token AS "accessToken", expires_in AS "expiresIn"`,
+      [id, userId, phoneNumberId, wabaId, label || null, accessToken, expiresIn || null]
+    );
+    if (!result.rows[0]) {
+      throw new Error("La cuenta ya está asociada a otro usuario.");
+    }
+    return result.rows[0];
+  } catch (error) {
+    console.error("Error actualizando cuenta de WhatsApp (por usuario):", error);
+    throw error;
+  }
+}
+
+export type WhatsAppMessageDirection = "inbound" | "outbound";
+
+export type WhatsAppMessageRecord = {
+  id: string;
+  userId: string;
+  phoneNumberId: string;
+  contact: string;
+  direction: WhatsAppMessageDirection;
+  messageType: string;
+  textBody?: string | null;
+  templateName?: string | null;
+  templateLanguage?: string | null;
+  metaMessageId?: string | null;
+  raw: any;
+  createdAt: Date;
+};
+
+export async function recordWhatsAppMessage(params: {
+  userId: string;
+  phoneNumberId: string;
+  contact: string;
+  direction: WhatsAppMessageDirection;
+  messageType?: string;
+  textBody?: string | null;
+  templateName?: string | null;
+  templateLanguage?: string | null;
+  metaMessageId?: string | null;
+  raw?: any;
+}): Promise<WhatsAppMessageRecord> {
+  const {
+    userId,
+    phoneNumberId,
+    contact,
+    direction,
+    messageType = "text",
+    textBody = null,
+    templateName = null,
+    templateLanguage = null,
+    metaMessageId = null,
+    raw = {},
+  } = params;
+
+  const id = randomUUID();
+  const result = await pool.query(
+    `INSERT INTO whatsapp_messages
+     (id, user_id, phone_number_id, contact, direction, message_type, text_body, template_name, template_language, meta_message_id, raw)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+     RETURNING
+       id,
+       user_id AS "userId",
+       phone_number_id AS "phoneNumberId",
+       contact,
+       direction,
+       message_type AS "messageType",
+       text_body AS "textBody",
+       template_name AS "templateName",
+       template_language AS "templateLanguage",
+       meta_message_id AS "metaMessageId",
+       raw,
+       created_at AS "createdAt"`,
+    [
+      id,
+      userId,
+      phoneNumberId,
+      contact,
+      direction,
+      messageType,
+      textBody,
+      templateName,
+      templateLanguage,
+      metaMessageId,
+      raw,
+    ]
+  );
+  return result.rows[0];
+}
+
+export async function listWhatsAppConversations(params: {
+  userId: string;
+  phoneNumberId: string;
+}): Promise<Array<{ contact: string; lastMessageAt: Date; lastText: string | null }>> {
+  const { userId, phoneNumberId } = params;
+  const result = await pool.query(
+    `
+    SELECT
+      contact,
+      MAX(created_at) AS "lastMessageAt",
+      (ARRAY_AGG(text_body ORDER BY created_at DESC))[1] AS "lastText"
+    FROM whatsapp_messages
+    WHERE user_id = $1 AND phone_number_id = $2
+    GROUP BY contact
+    ORDER BY MAX(created_at) DESC
+    LIMIT 50
+    `,
+    [userId, phoneNumberId]
+  );
+  return result.rows || [];
+}
+
+export async function listWhatsAppMessages(params: {
+  userId: string;
+  phoneNumberId: string;
+  contact: string;
+  limit?: number;
+}): Promise<WhatsAppMessageRecord[]> {
+  const { userId, phoneNumberId, contact, limit = 50 } = params;
+  const result = await pool.query(
+    `
+    SELECT
+      id,
+      user_id AS "userId",
+      phone_number_id AS "phoneNumberId",
+      contact,
+      direction,
+      message_type AS "messageType",
+      text_body AS "textBody",
+      template_name AS "templateName",
+      template_language AS "templateLanguage",
+      meta_message_id AS "metaMessageId",
+      raw,
+      created_at AS "createdAt"
+    FROM whatsapp_messages
+    WHERE user_id = $1 AND phone_number_id = $2 AND contact = $3
+    ORDER BY created_at DESC
+    LIMIT $4
+    `,
+    [userId, phoneNumberId, contact, limit]
+  );
+  return (result.rows || []).reverse();
 }
 
 /**

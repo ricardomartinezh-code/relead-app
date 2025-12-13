@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { findWhatsAppAccountByPhoneNumberId } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import { findWhatsAppAccountByPhoneNumberIdForUser, recordWhatsAppMessage } from "@/lib/db";
 
 type RequestBody = {
   phone_number_id?: string;
@@ -9,6 +10,11 @@ type RequestBody = {
 };
 
 export async function POST(request: Request) {
+  const user = await getCurrentUser();
+  if (!user?.id) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
   let body: RequestBody;
 
   try {
@@ -30,7 +36,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const account = await findWhatsAppAccountByPhoneNumberId(phoneNumberId);
+    const account = await findWhatsAppAccountByPhoneNumberIdForUser(user.id, phoneNumberId);
 
     if (!account) {
       return NextResponse.json(
@@ -70,6 +76,22 @@ export async function POST(request: Request) {
     }
 
     const data = await whatsappResponse.json();
+
+    try {
+      await recordWhatsAppMessage({
+        userId: user.id,
+        phoneNumberId: account.phoneNumberId,
+        contact: to,
+        direction: "outbound",
+        messageType: "text",
+        textBody: textBody,
+        metaMessageId: Array.isArray(data?.messages) ? data.messages?.[0]?.id : null,
+        raw: data,
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("No se pudo registrar el mensaje en la BD:", err);
+    }
 
     return NextResponse.json({
       success: true,
