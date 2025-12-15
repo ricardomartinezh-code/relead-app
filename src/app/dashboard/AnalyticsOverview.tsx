@@ -153,7 +153,7 @@ export default function AnalyticsOverview() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-xs text-slate-600">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Activity className="h-3.5 w-3.5" />
         Cargando analíticas…
       </div>
@@ -173,7 +173,7 @@ export default function AnalyticsOverview() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           <Activity className="h-3.5 w-3.5" />
           Analytics{" "}
@@ -185,7 +185,7 @@ export default function AnalyticsOverview() {
             ? "actualizando"
             : "conectando"}
         </span>
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700">
+        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
           Actualizado: {new Date(data.lastUpdated).toLocaleTimeString("es-MX")}
         </span>
       </div>
@@ -198,7 +198,7 @@ export default function AnalyticsOverview() {
         </TabsList>
 
         <TabsContent value="evolucion" className="animate-in fade-in-0 slide-in-from-top-1 duration-200">
-          <div className="h-28 w-full rounded-xl bg-gradient-to-b from-slate-50 to-white p-2">
+          <div className="h-28 w-full rounded-xl border border-border bg-background p-2">
             <svg
               viewBox="0 0 520 120"
               className="h-full w-full"
@@ -208,35 +208,35 @@ export default function AnalyticsOverview() {
               <polyline
                 points={viewsLine}
                 fill="none"
-                stroke="rgb(15 23 42)"
+                style={{ stroke: "hsl(var(--foreground))" }}
                 strokeWidth="2"
-                strokeOpacity="0.8"
+                strokeOpacity="0.7"
               />
               <polyline
                 points={clicksLine}
                 fill="none"
-                stroke="rgb(16 185 129)"
+                style={{ stroke: "hsl(var(--primary))" }}
                 strokeWidth="2"
                 strokeOpacity="0.9"
               />
             </svg>
           </div>
 
-          <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-slate-600">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 py-2">
-              <p className="text-sm font-semibold text-slate-900">
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-muted-foreground">
+            <div className="rounded-lg border border-border bg-muted/40 py-2">
+              <p className="text-sm font-semibold text-foreground">
                 {formatCompactNumber(data.totals.clicks)}
               </p>
               <p>Clics</p>
             </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 py-2">
-              <p className="text-sm font-semibold text-slate-900">
+            <div className="rounded-lg border border-border bg-muted/40 py-2">
+              <p className="text-sm font-semibold text-foreground">
                 {formatPercent(data.totals.ctr)}
               </p>
               <p>CTR</p>
             </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 py-2">
-              <p className="text-sm font-semibold text-slate-900">
+            <div className="rounded-lg border border-border bg-muted/40 py-2">
+              <p className="text-sm font-semibold text-foreground">
                 {data.topLink ? data.topLink.label : "—"}
               </p>
               <p>Top enlace</p>
@@ -246,25 +246,25 @@ export default function AnalyticsOverview() {
 
         <TabsContent value="origen" className="animate-in fade-in-0 slide-in-from-top-1 duration-200">
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <div className="rounded-xl border border-border bg-card p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Dispositivos (vistas)
               </div>
               <div className="mt-2 space-y-2">
                 {devices.length === 0 ? (
-                  <p className="text-sm text-slate-500">Aún no hay datos.</p>
+                  <p className="text-sm text-muted-foreground">Aún no hay datos.</p>
                 ) : (
                   devices.map((d) => (
                     <div key={d.label} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-slate-900">
+                        <span className="font-medium text-foreground">
                           {formatDeviceLabel(d.label)}
                         </span>
-                        <span className="text-slate-600">{formatCompactNumber(d.count)}</span>
+                        <span className="text-muted-foreground">{formatCompactNumber(d.count)}</span>
                       </div>
-                      <div className="h-2 w-full rounded-full bg-slate-100">
+                      <div className="h-2 w-full rounded-full bg-muted">
                         <div
-                          className="h-2 rounded-full bg-slate-900"
+                          className="h-2 rounded-full bg-foreground"
                           style={{ width: buildBarWidth(d.count, totalDeviceViews) }}
                         />
                       </div>
@@ -274,25 +274,25 @@ export default function AnalyticsOverview() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <div className="rounded-xl border border-border bg-card p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Origen (referrer)
               </div>
               <div className="mt-2 space-y-2">
                 {referrers.length === 0 ? (
-                  <p className="text-sm text-slate-500">Aún no hay datos.</p>
+                  <p className="text-sm text-muted-foreground">Aún no hay datos.</p>
                 ) : (
                   referrers.map((r) => (
                     <div key={r.label} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-slate-900">
+                        <span className="font-medium text-foreground">
                           {formatSourceLabel(r.label)}
                         </span>
-                        <span className="text-slate-600">{formatCompactNumber(r.count)}</span>
+                        <span className="text-muted-foreground">{formatCompactNumber(r.count)}</span>
                       </div>
-                      <div className="h-2 w-full rounded-full bg-slate-100">
+                      <div className="h-2 w-full rounded-full bg-muted">
                         <div
-                          className="h-2 rounded-full bg-emerald-600"
+                          className="h-2 rounded-full bg-primary"
                           style={{ width: buildBarWidth(r.count, totalRefViews) }}
                         />
                       </div>
@@ -335,8 +335,8 @@ export default function AnalyticsOverview() {
           </div>
 
           {data.topLink ? (
-            <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-              <span className="font-semibold text-slate-900">Top enlace:</span>{" "}
+            <div className="mt-3 rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">Top enlace:</span>{" "}
               {data.topLink.label} · {formatCompactNumber(data.topLink.clicks)} clics
             </div>
           ) : null}

@@ -130,3 +130,54 @@ textarea:focus-visible {
     @apply border-border;
   }
 }
+
+@layer base {
+  /* Compatibility layer: legacy slate/white utilities inside dashboard themes */
+  body.dark .bg-white,
+  body.theme-tinted .bg-white {
+    @apply bg-card;
+  }
+
+  body.dark .bg-slate-50,
+  body.theme-tinted .bg-slate-50 {
+    @apply bg-background;
+  }
+
+  body.dark .bg-slate-100,
+  body.theme-tinted .bg-slate-100 {
+    @apply bg-muted;
+  }
+
+  body.dark .border-slate-200,
+  body.theme-tinted .border-slate-200,
+  body.dark .border-slate-300,
+  body.theme-tinted .border-slate-300 {
+    @apply border-border;
+  }
+
+  body.dark .text-slate-900,
+  body.theme-tinted .text-slate-900 {
+    @apply text-foreground;
+  }
+
+  body.dark .text-slate-800,
+  body.theme-tinted .text-slate-800,
+  body.dark .text-slate-700,
+  body.theme-tinted .text-slate-700 {
+    color: hsl(var(--foreground) / 0.82);
+  }
+
+  body.dark .text-slate-600,
+  body.theme-tinted .text-slate-600,
+  body.dark .text-slate-500,
+  body.theme-tinted .text-slate-500 {
+    @apply text-muted-foreground;
+  }
+
+  body.dark .hover\:bg-slate-50:hover,
+  body.theme-tinted .hover\:bg-slate-50:hover,
+  body.dark .hover\:bg-slate-100:hover,
+  body.theme-tinted .hover\:bg-slate-100:hover {
+    @apply bg-accent;
+  }
+}

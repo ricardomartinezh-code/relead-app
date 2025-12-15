@@ -71,6 +71,7 @@ export function applyDashboardTheme(params: {
       : "light";
 
   body.classList.toggle("dark", mode === "dark");
+  body.classList.toggle("theme-tinted", mode === "custom");
 
   if (mode === "dark") {
     body.style.colorScheme = "dark";
@@ -91,6 +92,8 @@ export function applyDashboardTheme(params: {
     setVar(body, "--primary", null);
     setVar(body, "--ring", null);
     setVar(body, "--accent", null);
+    setVar(body, "--muted", null);
+    setVar(body, "--secondary", null);
     return;
   }
 
@@ -98,12 +101,14 @@ export function applyDashboardTheme(params: {
   const accentS = clamp(Math.round(hsl.s * 0.95), 55, 90);
   const accentL = clamp(Math.round(hsl.l * 0.95), 38, 58);
 
-  setVar(body, "--background", `${h} 35% 98%`);
-  setVar(body, "--card", `${h} 35% 99%`);
-  setVar(body, "--popover", `${h} 35% 99%`);
+  setVar(body, "--background", `${h} 35% 96%`);
+  setVar(body, "--card", `${h} 35% 98%`);
+  setVar(body, "--popover", `${h} 35% 98%`);
   setVar(body, "--border", `${h} 18% 90%`);
   setVar(body, "--input", `${h} 18% 90%`);
   setVar(body, "--accent", `${h} 30% 96%`);
+  setVar(body, "--muted", `${h} 25% 95%`);
+  setVar(body, "--secondary", `${h} 25% 95%`);
   setVar(body, "--primary", `${h} ${accentS}% ${accentL}%`);
   setVar(body, "--ring", `${h} ${accentS}% ${accentL}%`);
 }
@@ -113,6 +118,7 @@ export function resetDashboardTheme() {
   const body = document.body;
   if (!body) return;
   body.classList.remove("dark");
+  body.classList.remove("theme-tinted");
   body.style.colorScheme = "light";
   setVar(body, "--background", null);
   setVar(body, "--card", null);
@@ -122,6 +128,8 @@ export function resetDashboardTheme() {
   setVar(body, "--primary", null);
   setVar(body, "--ring", null);
   setVar(body, "--accent", null);
+  setVar(body, "--muted", null);
+  setVar(body, "--secondary", null);
 }
 
 export function storeDashboardTheme(params: {

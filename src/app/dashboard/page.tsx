@@ -22,7 +22,7 @@ export default async function DashboardPage() {
   if (!userId) {
     return (
       <DashboardLayout>
-        <Card className="border-slate-100 bg-white/80 shadow-lg">
+        <Card className="border-border bg-card/80 shadow-lg">
           <CardHeader>
             <CardTitle className="text-xl">Inicia sesión para administrar tu panel</CardTitle>
             <CardDescription>
@@ -68,7 +68,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="relative space-y-4">
             {/* Contenedor de gráfico y métricas */}
-            <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-4 shadow-inner">
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-4 shadow-inner shadow-black/20 backdrop-blur">
               <AnalyticsOverview />
             </div>
           </CardContent>
@@ -96,7 +96,7 @@ export default async function DashboardPage() {
             <Card key={item.title} className="shadow-sm">
               <CardHeader className="flex items-start gap-3 pb-3">
                 {/* Icono dinamico */}
-                <item.icon className="h-5 w-5 text-slate-900" />
+                <item.icon className="h-5 w-5 text-foreground" />
                 <div className="space-y-1">
                   <CardTitle className="text-lg">{item.title}</CardTitle>
                   <CardDescription>{item.description}</CardDescription>

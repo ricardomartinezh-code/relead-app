@@ -266,7 +266,7 @@ export function DashboardChatWidget() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="group flex items-center gap-2 rounded-full bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          className="group flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring/30"
           aria-label="Abrir asistente"
         >
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition group-hover:scale-105">
