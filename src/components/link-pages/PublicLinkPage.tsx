@@ -353,8 +353,7 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
       ? "aspect-[16/9]"
       : config.aspect === "1:1"
       ? "aspect-square"
-      : "";
-  const display = config.display || "single";
+      : "aspect-[4/3]";
   const size = config.size || "md";
   const minHeight = size === "sm" ? 120 : size === "lg" ? 240 : 160;
   const images: string[] = Array.isArray(config.images)
@@ -421,38 +420,7 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
         <div className={["flex w-full items-center justify-center bg-white/5", shapeClass].join(" ")} style={itemStyle}>
           <span className="text-xs text-slate-200">Añade una imagen</span>
         </div>
-      ) : display === "carousel" && images.length > 1 ? (
-        <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2">
-          {images.map((url, idx) =>
-            wrapImageTile({
-              key: `${block.id}-img-${idx}`,
-              className: [itemBaseClass, "w-64 shrink-0 snap-center bg-white/5"].join(" "),
-              style: itemStyle,
-              url,
-            })
-          )}
-        </div>
-      ) : display === "mosaic" && images.length > 1 ? (
-        <div className="grid grid-cols-2 gap-2">
-          {images.map((url, idx) =>
-            wrapImageTile({
-              key: `${block.id}-img-${idx}`,
-              className: [
-                itemBaseClass,
-                "bg-white/5",
-                idx === 0 && images.length >= 3 ? "col-span-2" : "",
-              ]
-                .filter(Boolean)
-                .join(" "),
-              style:
-                idx === 0 && images.length >= 3 && !aspectClass
-                  ? ({ height: `${Math.round(minHeight * 1.2)}px` } as CSSProperties)
-                  : itemStyle,
-              url,
-            })
-          )}
-        </div>
-      ) : display === "grid" && images.length > 1 ? (
+      ) : images.length > 1 ? (
         <div className="grid grid-cols-2 gap-2">
           {images.map((url, idx) =>
             wrapImageTile({

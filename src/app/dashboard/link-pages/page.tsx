@@ -1,7 +1,8 @@
 "use client";
 
 import { getPublicLink } from "@/lib/urls";
-import { type FormEvent, useEffect, useState } from "react";
+import Image from "next/image";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { cn } from "@/components/lib/utils";
@@ -15,7 +16,7 @@ import type {
 import type { ProfileRecord } from "@/lib/db";
 import PublicLinkPage from "@/components/link-pages/PublicLinkPage";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Plus, RefreshCcw, Star, Trash2, UploadCloud } from "lucide-react";
 import { CollapsiblePanel } from "@/components/ui/collapsible-panel";
 
 interface ApiListPagesResponse {
@@ -90,7 +91,6 @@ const defaultBlockConfigs: Record<string, any> = {
     images: [],
     linkUrl: "",
     alt: "",
-    display: "single",
     size: "md",
     shape: "rounded",
     aspect: "auto",
@@ -233,7 +233,7 @@ function DesignControls({
                 type="file"
                 accept="image/*"
                 onChange={onBackgroundImageUpload}
-                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm"
+                className="w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-slate-800"
               />
             </label>
             <label className="flex flex-col gap-1">
@@ -426,6 +426,10 @@ export default function LinkPagesScreen() {
   const [blockForm, setBlockForm] = useState({ title: "", blockType: "text" });
   const [blockCreating, setBlockCreating] = useState(false);
   const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>({});
+  const [imageDropActiveBlockId, setImageDropActiveBlockId] = useState<string | null>(null);
+  const [imageReplaceTarget, setImageReplaceTarget] = useState<{ blockId: string; index: number } | null>(null);
+  const imageReplaceInputRef = useRef<HTMLInputElement | null>(null);
+  const imageAddInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   // Drafts for new link items keyed by block id.  In addition to label and URL,
   // a draft can contain optional iconType (e.g. "instagram", "twitter", "custom"),
   // a specific icon key (for default icons) and an imageUrl for custom uploads.
@@ -969,6 +973,16 @@ export default function LinkPagesScreen() {
     const files = Array.from((e?.target?.files as FileList | undefined) ?? []);
     if (files.length === 0) return;
 
+    await handleBlockImageFilesUpload(blockId, files);
+
+    try {
+      if (e?.target) e.target.value = "";
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleBlockImageFilesUpload = async (blockId: string, files: File[]) => {
     try {
       const uploadedUrls: string[] = [];
       for (const file of files) {
@@ -990,9 +1004,60 @@ export default function LinkPagesScreen() {
       });
     } catch (err) {
       console.error(err);
-    } finally {
-      if (e?.target) e.target.value = "";
     }
+  };
+
+  const getBlockImages = (config: any): string[] => {
+    const images: string[] = Array.isArray(config?.images)
+      ? (config.images as any[]).map((u) => String(u)).filter(Boolean)
+      : [];
+    if (images.length === 0 && config?.imageUrl) images.push(String(config.imageUrl));
+    return images;
+  };
+
+  const setBlockImages = (blockId: string, nextImages: string[]) => {
+    updateBlockConfigLocal(blockId, (config) => ({
+      ...config,
+      images: nextImages,
+      imageUrl: nextImages[0] || "",
+    }));
+  };
+
+  const handleRemoveBlockImage = (blockId: string, index: number) => {
+    updateBlockConfigLocal(blockId, (config) => {
+      const images = getBlockImages(config).filter((_, i) => i !== index);
+      return { ...config, images, imageUrl: images[0] || "" };
+    });
+  };
+
+  const handleMakePrimaryBlockImage = (blockId: string, index: number) => {
+    updateBlockConfigLocal(blockId, (config) => {
+      const images = getBlockImages(config);
+      if (index <= 0 || index >= images.length) return config;
+      const selected = images[index];
+      const next = [selected, ...images.filter((_, i) => i !== index)];
+      return { ...config, images: next, imageUrl: next[0] || "" };
+    });
+  };
+
+  const handleReplaceBlockImage = async (blockId: string, index: number, file: File) => {
+    const url = await uploadImageFile(file);
+    updateBlockConfigLocal(blockId, (config) => {
+      const images = getBlockImages(config);
+      const next = [...images];
+      next[index] = url;
+      return { ...config, images: next, imageUrl: next[0] || "" };
+    });
+  };
+
+  const openAddImagesPicker = (blockId: string) => {
+    const input = imageAddInputRefs.current[blockId];
+    input?.click();
+  };
+
+  const openReplaceImagePicker = (blockId: string, index: number) => {
+    setImageReplaceTarget({ blockId, index });
+    imageReplaceInputRef.current?.click();
   };
 
   const reloadCurrentPage = async () => {
@@ -1204,6 +1269,25 @@ export default function LinkPagesScreen() {
 
   return (
     <DashboardLayout>
+      <input
+        ref={imageReplaceInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.currentTarget.files?.[0];
+          if (!file || !imageReplaceTarget) return;
+          const target = imageReplaceTarget;
+          void (async () => {
+            try {
+              await handleReplaceBlockImage(target.blockId, target.index, file);
+            } finally {
+              setImageReplaceTarget(null);
+              e.currentTarget.value = "";
+            }
+          })();
+        }}
+      />
       <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
       <header className="flex items-center justify-between gap-2">
         <div>
@@ -1540,6 +1624,21 @@ export default function LinkPagesScreen() {
                         />
 
                         <div className="flex items-center gap-2">
+                          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                            {link.imageUrl ? (
+                              <Image
+                                src={link.imageUrl}
+                                alt={`${link.type} icon`}
+                                width={40}
+                                height={40}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-[10px] font-semibold text-slate-400">
+                                ICON
+                              </span>
+                            )}
+                          </div>
                           <input
                             type="file"
                             accept="image/*"
@@ -1549,7 +1648,7 @@ export default function LinkPagesScreen() {
                               void handleSocialImageUpload(index, file);
                               e.currentTarget.value = "";
                             }}
-                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                            className="w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                           />
                           {socialIconUploading[index] ? (
                             <span className="text-xs text-slate-500">Subiendo…</span>
@@ -1835,164 +1934,314 @@ export default function LinkPagesScreen() {
                       </div>
                     )}
 
-                    {block.blockType === "image" && (
-                      <div className="mt-3 space-y-3 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700 animate-in fade-in-0 slide-in-from-top-1 duration-200">
-                        <label className="flex flex-col gap-1">
-                          Subir imágenes (principal)
+                    {block.blockType === "image" && (() => {
+                      const images = getBlockImages(blockConfig);
+                      const isDropActive = imageDropActiveBlockId === block.id;
+                      const shape = String(blockConfig.shape || "rounded");
+                      const shapeClass =
+                        shape === "pill"
+                          ? "rounded-full"
+                          : shape === "square"
+                          ? "rounded-none"
+                          : "rounded-xl";
+
+                      const aspect = String(blockConfig.aspect || "auto");
+                      const aspectClass =
+                        aspect === "16:9"
+                          ? "aspect-[16/9]"
+                          : aspect === "1:1"
+                          ? "aspect-square"
+                          : "aspect-[4/3]";
+
+                      const size = String(blockConfig.size || "md");
+                      const tileHeightClass =
+                        size === "sm" ? "min-h-[92px]" : size === "lg" ? "min-h-[160px]" : "min-h-[128px]";
+
+                      const cardBase =
+                        "group relative overflow-hidden border border-slate-200 bg-white shadow-sm transition hover:shadow-md";
+
+                      return (
+                        <div className="mt-3 space-y-4 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700 animate-in fade-in-0 slide-in-from-top-1 duration-200">
                           <input
+                            ref={(el) => {
+                              imageAddInputRefs.current[block.id] = el;
+                            }}
                             type="file"
                             accept="image/*"
                             multiple
-                            onChange={(e) => handleBlockImageUpload(e as any, block.id)}
-                            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm"
+                            className="hidden"
+                            onChange={(e) => void handleBlockImageUpload(e as any, block.id)}
                           />
-                        </label>
 
-                        <label className="flex flex-col gap-1">
-                          Link al hacer clic (opcional)
-                          <input
-                            type="url"
-                            value={blockConfig.linkUrl || ""}
-                            onChange={(e) =>
-                              updateBlockConfigLocal(block.id, (config) => ({
-                                ...config,
-                                linkUrl: e.target.value,
-                              }))
-                            }
-                            className="rounded-md border border-slate-300 px-2 py-1 text-sm"
-                            placeholder="https://..."
-                          />
-                        </label>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="space-y-0.5">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Imágenes
+                              </p>
+                              <p className="text-sm font-medium text-slate-900">
+                                Sube, reemplaza o elimina una imagen específica
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openAddImagesPicker(block.id)}
+                              className="gap-2"
+                            >
+                              <UploadCloud className="h-4 w-4" />
+                              Subir
+                            </Button>
+                          </div>
 
-                        <CollapsiblePanel
-                          title="Añadir por URL"
-                          description="Pega una URL por línea. Se usarán como galería/slider según el formato."
-                          className="bg-slate-50 shadow-none"
-                          headerClassName="px-3 py-2"
-                          contentClassName="px-3 pb-3"
-                        >
-                          <textarea
-                            value={
-                              Array.isArray(blockConfig.images)
-                                ? blockConfig.images.join("\n")
-                                : blockConfig.imageUrl
-                                ? String(blockConfig.imageUrl)
-                                : ""
-                            }
-                            onChange={(e) => {
-                              const urls = e.target.value
-                                .split("\n")
-                                .map((line) => line.trim())
-                                .filter(Boolean);
-                              updateBlockConfigLocal(block.id, (config) => ({
-                                ...config,
-                                images: urls,
-                                imageUrl: urls[0] || "",
-                              }));
+                          <div
+                            className={cn(
+                              "rounded-2xl border-2 border-dashed bg-slate-50 p-3 transition",
+                              isDropActive ? "border-emerald-400 bg-emerald-50/60" : "border-slate-200 hover:border-slate-300"
+                            )}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              setImageDropActiveBlockId(block.id);
                             }}
-                            className="min-h-[90px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                            placeholder={"https://...\nhttps://..."}
-                          />
-                        </CollapsiblePanel>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <label className="flex flex-col gap-1">
-                            Formato
-                            <select
-                              value={blockConfig.display || "single"}
-                              onChange={(e) =>
-                                updateBlockConfigLocal(block.id, (config) => ({
-                                  ...config,
-                                  display: e.target.value,
-                                }))
-                              }
-                              className="rounded-md border border-slate-300 px-2 py-1"
-                            >
-                              <option value="single">Una sola</option>
-                              <option value="carousel">Carrusel</option>
-                              <option value="mosaic">Mosaico</option>
-                              <option value="grid">Cuadrícula</option>
-                            </select>
-                          </label>
-                          <label className="flex flex-col gap-1">
-                            Tamaño
-                            <select
-                              value={blockConfig.size || "md"}
-                              onChange={(e) =>
-                                updateBlockConfigLocal(block.id, (config) => ({
-                                  ...config,
-                                  size: e.target.value,
-                                }))
-                              }
-                              className="rounded-md border border-slate-300 px-2 py-1"
-                            >
-                              <option value="sm">Pequeño</option>
-                              <option value="md">Medio</option>
-                              <option value="lg">Grande</option>
-                            </select>
-                          </label>
-                        </div>
-                        <label className="flex flex-col gap-1">
-                          Texto alternativo
-                          <input
-                            type="text"
-                            value={blockConfig.alt || ""}
-                            onChange={(e) =>
-                              updateBlockConfigLocal(block.id, (config) => ({
-                                ...config,
-                                alt: e.target.value,
-                              }))
-                            }
-                            className="rounded-md border border-slate-300 px-2 py-1 text-sm"
-                          />
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <label className="flex flex-col gap-1">
-                            Forma
-                            <select
-                              value={blockConfig.shape || "rounded"}
-                              onChange={(e) =>
-                                updateBlockConfigLocal(block.id, (config) => ({
-                                  ...config,
-                                  shape: e.target.value,
-                                }))
-                              }
-                              className="rounded-md border border-slate-300 px-2 py-1"
-                            >
-                              <option value="rounded">Redondeado</option>
-                              <option value="pill">Píldora</option>
-                              <option value="square">Cuadrado</option>
-                            </select>
-                          </label>
-                          <label className="flex flex-col gap-1">
-                            Aspecto
-                            <select
-                              value={blockConfig.aspect || "auto"}
-                              onChange={(e) =>
-                                updateBlockConfigLocal(block.id, (config) => ({
-                                  ...config,
-                                  aspect: e.target.value,
-                                }))
-                              }
-                              className="rounded-md border border-slate-300 px-2 py-1"
-                            >
-                              <option value="auto">Auto</option>
-                              <option value="16:9">16:9</option>
-                              <option value="1:1">1:1</option>
-                            </select>
-                          </label>
-                        </div>
-                        <div className="flex justify-end">
-                          <button
-                            type="button"
-                            className="rounded-md bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
-                            onClick={() => handleSaveBlockConfig(block.id, blockConfig)}
+                            onDragLeave={() => {
+                              setImageDropActiveBlockId((prev) => (prev === block.id ? null : prev));
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              setImageDropActiveBlockId(null);
+                              const dropped = Array.from(e.dataTransfer.files || []).filter((f) =>
+                                f.type.startsWith("image/")
+                              );
+                              if (dropped.length) void handleBlockImageFilesUpload(block.id, dropped);
+                            }}
                           >
-                            Guardar bloque
-                          </button>
+                            <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
+                              <div className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+                                <UploadCloud className="h-5 w-5 text-slate-700" />
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-sm font-semibold text-slate-900">
+                                  Arrastra tus imágenes aquí
+                                </p>
+                                <p className="text-xs text-slate-600">
+                                  O usa el botón “Subir” para elegir archivos.
+                                </p>
+                              </div>
+                            </div>
+
+                            {images.length > 0 && (
+                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                {images.map((url, idx) => (
+                                  <div
+                                    key={`${block.id}-img-${idx}`}
+                                    className={cn(cardBase, shapeClass)}
+                                  >
+                                    <div className={cn("relative w-full", aspectClass, tileHeightClass)}>
+                                      <Image
+                                        src={url}
+                                        alt={blockConfig.alt || `Imagen ${idx + 1}`}
+                                        fill
+                                        className="object-cover"
+                                      />
+                                    </div>
+
+                                    {idx === 0 && (
+                                      <div className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-slate-900 shadow">
+                                        Portada
+                                      </div>
+                                    )}
+
+                                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-gradient-to-t from-black/55 via-black/0 to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleMakePrimaryBlockImage(block.id, idx)}
+                                        className="rounded-md bg-white/90 p-2 text-slate-900 shadow hover:bg-white"
+                                        title="Poner como portada"
+                                      >
+                                        <Star className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => openReplaceImagePicker(block.id, idx)}
+                                        className="rounded-md bg-white/90 p-2 text-slate-900 shadow hover:bg-white"
+                                        title="Reemplazar imagen"
+                                      >
+                                        <RefreshCcw className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveBlockImage(block.id, idx)}
+                                        className="rounded-md bg-white/90 p-2 text-red-700 shadow hover:bg-white"
+                                        title="Eliminar imagen"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+
+                                <button
+                                  type="button"
+                                  onClick={() => openAddImagesPicker(block.id)}
+                                  className={cn(
+                                    "flex min-h-[110px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50",
+                                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                                  )}
+                                  title="Agregar más imágenes"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                  Agregar
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          <CollapsiblePanel
+                            title="Link al hacer clic (opcional)"
+                            description="Si lo defines, todas las imágenes de este bloque abrirán el link."
+                            className="bg-slate-50 shadow-none"
+                            headerClassName="px-3 py-2"
+                            contentClassName="px-3 pb-3"
+                          >
+                            <input
+                              type="url"
+                              value={blockConfig.linkUrl || ""}
+                              onChange={(e) =>
+                                updateBlockConfigLocal(block.id, (config) => ({
+                                  ...config,
+                                  linkUrl: e.target.value,
+                                }))
+                              }
+                              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                              placeholder="https://..."
+                            />
+                          </CollapsiblePanel>
+
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <div className="space-y-1">
+                              <p className="text-xs font-semibold text-slate-700">Tamaño</p>
+                              <div className="grid grid-cols-3 gap-2">
+                                {[
+                                  { value: "sm", label: "S" },
+                                  { value: "md", label: "M" },
+                                  { value: "lg", label: "L" },
+                                ].map((opt) => (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() =>
+                                      updateBlockConfigLocal(block.id, (config) => ({
+                                        ...config,
+                                        size: opt.value,
+                                      }))
+                                    }
+                                    className={cn(
+                                      "rounded-xl border px-3 py-2 text-sm font-semibold shadow-sm transition",
+                                      size === opt.value
+                                        ? "border-slate-900 bg-slate-900 text-white"
+                                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                    )}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <p className="text-xs font-semibold text-slate-700">Recorte</p>
+                              <div className="grid grid-cols-3 gap-2">
+                                {[
+                                  { value: "auto", label: "Auto" },
+                                  { value: "1:1", label: "1:1" },
+                                  { value: "16:9", label: "16:9" },
+                                ].map((opt) => (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() =>
+                                      updateBlockConfigLocal(block.id, (config) => ({
+                                        ...config,
+                                        aspect: opt.value,
+                                      }))
+                                    }
+                                    className={cn(
+                                      "rounded-xl border px-3 py-2 text-sm font-semibold shadow-sm transition",
+                                      aspect === opt.value
+                                        ? "border-emerald-700 bg-emerald-600 text-white"
+                                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                    )}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <div className="space-y-1">
+                              <p className="text-xs font-semibold text-slate-700">Bordes</p>
+                              <div className="grid grid-cols-3 gap-2">
+                                {[
+                                  { value: "rounded", label: "Rounded" },
+                                  { value: "pill", label: "Pill" },
+                                  { value: "square", label: "Square" },
+                                ].map((opt) => (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() =>
+                                      updateBlockConfigLocal(block.id, (config) => ({
+                                        ...config,
+                                        shape: opt.value,
+                                      }))
+                                    }
+                                    className={cn(
+                                      "rounded-xl border px-3 py-2 text-sm font-semibold shadow-sm transition",
+                                      shape === opt.value
+                                        ? "border-indigo-700 bg-indigo-600 text-white"
+                                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                    )}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <p className="text-xs font-semibold text-slate-700">Accesibilidad</p>
+                              <label className="flex flex-col gap-1 text-xs text-slate-700">
+                                Texto alternativo
+                                <input
+                                  type="text"
+                                  value={blockConfig.alt || ""}
+                                  onChange={(e) =>
+                                    updateBlockConfigLocal(block.id, (config) => ({
+                                      ...config,
+                                      alt: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                                  placeholder="Describe la imagen (opcional)"
+                                />
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              className="rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                              onClick={() => handleSaveBlockConfig(block.id, blockConfig)}
+                            >
+                              Guardar bloque
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {block.blockType === "social" && (
                       <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700 animate-in fade-in-0 slide-in-from-top-1 duration-200">
@@ -2217,7 +2466,7 @@ export default function LinkPagesScreen() {
                             type="file"
                             accept="image/*"
                             onChange={(e) => handleIconUpload(e as any, block.id)}
-                            className="w-40 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                            className="w-56 cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-slate-800"
                           />
                         )}
                         <button
