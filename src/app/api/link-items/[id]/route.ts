@@ -19,7 +19,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
     const { position, label, url, icon, imageUrl, isActive, metadata } = body;
 
     const rows = await sql/*sql*/`
-      SELECT i.id, p.user_id
+      SELECT i.id, b.page_id, p.user_id
       FROM link_items i
       JOIN link_blocks b ON b.id = i.block_id
       JOIN link_pages p ON p.id = b.page_id
@@ -41,6 +41,12 @@ export async function PUT(req: Request, { params }: RouteParams) {
         metadata = COALESCE(${metadata}::jsonb, metadata),
         updated_at = now()
       WHERE id = ${id}
+    `;
+
+    await sql/*sql*/`
+      UPDATE link_pages
+      SET updated_at = now()
+      WHERE id = ${rows[0].page_id}
     `;
 
     const updatedRows = await sql/*sql*/`
@@ -75,11 +81,20 @@ export async function DELETE(_req: Request, { params }: RouteParams) {
         JOIN link_pages p ON p.id = b.page_id
         WHERE p.user_id = ${user.id}
       )
-      RETURNING id
+      RETURNING id, block_id
     `;
 
     if (!rows.length) {
       return NextResponse.json({ error: "Ítem no encontrado" }, { status: 404 });
+    }
+
+    const pageRows = await sql/*sql*/`
+      SELECT page_id FROM link_blocks WHERE id = ${rows[0].block_id} LIMIT 1
+    `;
+    if (pageRows.length) {
+      await sql/*sql*/`
+        UPDATE link_pages SET updated_at = now() WHERE id = ${pageRows[0].page_id}
+      `;
     }
 
     return NextResponse.json({ success: true });

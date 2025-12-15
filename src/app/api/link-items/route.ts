@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     }
 
     const rows = await sql/*sql*/`
-      SELECT b.id, p.user_id
+      SELECT b.id, b.page_id, p.user_id
       FROM link_blocks b
       JOIN link_pages p ON p.id = b.page_id
       WHERE b.id = ${blockId}
@@ -39,6 +39,12 @@ export async function POST(req: Request) {
       imageUrl,
       metadata,
     });
+
+    await sql/*sql*/`
+      UPDATE link_pages
+      SET updated_at = now()
+      WHERE id = ${rows[0].page_id}
+    `;
 
     return NextResponse.json({ item }, { status: 201 });
   } catch (error) {

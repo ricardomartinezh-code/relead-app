@@ -20,7 +20,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
     const { title, subtitle, position, isVisible, config } = body;
 
     const rows = await sql/*sql*/`
-      SELECT b.id, p.user_id
+      SELECT b.id, b.page_id, p.user_id
       FROM link_blocks b
       JOIN link_pages p ON p.id = b.page_id
       WHERE b.id = ${id}
@@ -40,6 +40,12 @@ export async function PUT(req: Request, { params }: RouteParams) {
         config = COALESCE(${config}::jsonb, config),
         updated_at = now()
       WHERE id = ${id}
+    `;
+
+    await sql/*sql*/`
+      UPDATE link_pages
+      SET updated_at = now()
+      WHERE id = ${rows[0].page_id}
     `;
 
     const targetPosition = position ?? rows[0].position;
@@ -70,12 +76,18 @@ export async function DELETE(_req: Request, { params }: RouteParams) {
       AND page_id IN (
         SELECT id FROM link_pages WHERE user_id = ${user.id}
       )
-      RETURNING id
+      RETURNING id, page_id
     `;
 
     if (!rows.length) {
       return NextResponse.json({ error: "Bloque no encontrado" }, { status: 404 });
     }
+
+    await sql/*sql*/`
+      UPDATE link_pages
+      SET updated_at = now()
+      WHERE id = ${rows[0].page_id}
+    `;
 
     return NextResponse.json({ success: true });
   } catch (error) {

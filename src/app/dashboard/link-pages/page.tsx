@@ -1,6 +1,6 @@
 "use client";
 
-import { getPublicLink } from "@/lib/urls";
+import { getPublicDomain, getPublicLink, getPublicLinkPage } from "@/lib/urls";
 import Image from "next/image";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -1384,12 +1384,14 @@ export default function LinkPagesScreen() {
           ) : (
             <div className="space-y-2">
               {pages.map((page) => {
-                const publicUrl = getPublicLink(page.slug);
+                const profileSlug = profile?.slug || "tu-perfil";
+                const publicUrl = getPublicLinkPage(profileSlug, page.slug);
+                const profileUrl = getPublicLink(profileSlug);
 
                 return (
                   <div
                     key={page.id}
-                    className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3 text-sm text-foreground sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -1402,9 +1404,9 @@ export default function LinkPagesScreen() {
                           </span>
                         )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         {/* mostramos la URL pública completa */}
-                        <span>{publicUrl}</span>
+                        <span className="break-all">{publicUrl}</span>
                         {page.isPublished && (
                           <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">
                             Publicado
@@ -1424,7 +1426,14 @@ export default function LinkPagesScreen() {
 
                       <Button asChild variant="outline" size="sm" className="gap-2">
                         <Link href={publicUrl} target="_blank">
-                          Ver página pública
+                          Ver esta página
+                          <ArrowUpRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+
+                      <Button asChild variant="ghost" size="sm" className="gap-2">
+                        <Link href={profileUrl} target="_blank">
+                          Ver perfil
                           <ArrowUpRight className="h-4 w-4" />
                         </Link>
                       </Button>
@@ -1473,7 +1482,7 @@ export default function LinkPagesScreen() {
           URL
           <div className="flex items-center gap-1">
             <span className="rounded-md border border-slate-300 bg-slate-100 px-2 py-1 text-sm text-slate-600">
-              rlead.xyz/
+              {getPublicDomain().replace(/^https?:\/\//, "")}/{profile?.slug || "tu-perfil"}/
             </span>
             <input
               type="text"
