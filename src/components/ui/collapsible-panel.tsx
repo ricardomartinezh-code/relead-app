@@ -36,11 +36,16 @@ export function CollapsiblePanel(props: {
     : setUncontrolledOpen;
 
   return (
-    <div className={cn("rounded-xl border border-slate-200 bg-white", className)}>
+    <div
+      className={cn(
+        "rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5",
+        className
+      )}
+    >
       <button
         type="button"
         className={cn(
-          "flex w-full items-start justify-between gap-3 rounded-xl px-4 py-3 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300",
+          "flex w-full items-start justify-between gap-3 rounded-xl px-4 py-3 text-left transition-colors duration-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 active:bg-slate-100/60",
           headerClassName
         )}
         aria-expanded={open}
@@ -57,7 +62,7 @@ export function CollapsiblePanel(props: {
           {right}
           <ChevronDown
             className={cn(
-              "h-4 w-4 text-slate-500 transition-transform duration-200",
+              "h-4 w-4 text-slate-500 transition-transform duration-300 ease-out",
               open ? "rotate-180" : "rotate-0"
             )}
             aria-hidden="true"
@@ -67,15 +72,22 @@ export function CollapsiblePanel(props: {
 
       <div
         className={cn(
-          "grid transition-all duration-200 ease-out",
+          "grid transition-[grid-template-rows] duration-300 ease-out",
           open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
         )}
       >
         <div className="overflow-hidden">
-          <div className={cn("px-4 pb-4", contentClassName)}>{children}</div>
+          <div
+            className={cn(
+              "px-4 pb-4 transition-[opacity,transform] duration-200 ease-out",
+              open ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0",
+              contentClassName
+            )}
+          >
+            {children}
+          </div>
         </div>
       </div>
     </div>
   );
 }
-

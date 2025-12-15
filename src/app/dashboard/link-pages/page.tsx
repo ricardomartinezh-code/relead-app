@@ -16,6 +16,7 @@ import type { ProfileRecord } from "@/lib/db";
 import PublicLinkPage from "@/components/link-pages/PublicLinkPage";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
+import { CollapsiblePanel } from "@/components/ui/collapsible-panel";
 
 interface ApiListPagesResponse {
   pages: LinkPageSummary[];
@@ -1485,16 +1486,12 @@ export default function LinkPagesScreen() {
             )}
           </div>
 
-          <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Redes sociales
-                </p>
-                <p className="text-sm font-medium text-slate-900">
-                  Se muestran en tu página pública con su icono
-                </p>
-              </div>
+          <CollapsiblePanel
+            title="Redes sociales"
+            description="Se muestran en tu página pública con su icono (máximo 5)."
+            defaultOpen
+            className="bg-slate-50"
+            right={
               <Button
                 type="button"
                 variant="outline"
@@ -1502,18 +1499,16 @@ export default function LinkPagesScreen() {
                 onClick={handleAddSocial}
                 disabled={socialLoading}
               >
-                + Añadir red
+                + Añadir
               </Button>
-            </div>
-
+            }
+          >
             {socialLoading ? (
               <p className="text-sm text-slate-500">Cargando redes…</p>
             ) : (
               <form onSubmit={handleSaveSocial} className="space-y-3">
                 {socialError && <div className="text-sm text-red-600">{socialError}</div>}
-                {socialMessage && (
-                  <div className="text-sm text-emerald-600">{socialMessage}</div>
-                )}
+                {socialMessage && <div className="text-sm text-emerald-600">{socialMessage}</div>}
 
                 {socialLinks.length === 0 ? (
                   <p className="text-sm text-slate-500">Aún no tienes redes añadidas.</p>
@@ -1527,7 +1522,7 @@ export default function LinkPagesScreen() {
                         <select
                           value={link.type}
                           onChange={(e) => handleSocialChange(index, "type", e.target.value)}
-                          className="w-full rounded-md border border-slate-300 bg-white px-2 py-2 text-sm"
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                         >
                           {SOCIAL_OPTIONS.map((opt) => (
                             <option key={opt} value={opt}>
@@ -1541,7 +1536,7 @@ export default function LinkPagesScreen() {
                           value={link.url}
                           onChange={(e) => handleSocialChange(index, "url", e.target.value)}
                           placeholder="https://..."
-                          className="w-full rounded-md border border-slate-300 bg-white px-2 py-2 text-sm"
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                         />
 
                         <div className="flex items-center gap-2">
@@ -1554,7 +1549,7 @@ export default function LinkPagesScreen() {
                               void handleSocialImageUpload(index, file);
                               e.currentTarget.value = "";
                             }}
-                            className="w-full rounded-md border border-slate-300 bg-white px-2 py-2 text-sm"
+                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                           />
                           {socialIconUploading[index] ? (
                             <span className="text-xs text-slate-500">Subiendo…</span>
@@ -1573,7 +1568,7 @@ export default function LinkPagesScreen() {
                         <button
                           type="button"
                           onClick={() => handleRemoveSocial(index)}
-                          className="rounded-md border border-slate-300 bg-white px-2 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                          className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm hover:bg-slate-100"
                         >
                           Eliminar
                         </button>
@@ -1593,7 +1588,7 @@ export default function LinkPagesScreen() {
                 </div>
               </form>
             )}
-          </div>
+          </CollapsiblePanel>
 
           {loadingPage && (
             <p className="text-sm text-slate-500">Cargando página…</p>
@@ -1646,7 +1641,7 @@ export default function LinkPagesScreen() {
                         >
                           <ChevronDown
                             className={cn(
-                              "h-4 w-4 transition-transform duration-200",
+                              "h-4 w-4 transition-transform duration-300 ease-out",
                               isExpanded ? "rotate-180" : "rotate-0"
                             )}
                             aria-hidden="true"
@@ -1685,14 +1680,19 @@ export default function LinkPagesScreen() {
 
                     <div
                       className={cn(
-                        "grid transition-all duration-200 ease-out",
+                        "grid transition-[grid-template-rows] duration-300 ease-out",
                         isExpanded
                           ? "grid-rows-[1fr] opacity-100"
                           : "grid-rows-[0fr] opacity-0"
                       )}
                     >
                       <div className="overflow-hidden">
-                        <div className={cn("pt-3", isExpanded ? "animate-in fade-in-0 slide-in-from-top-1 duration-200" : "")}>
+                        <div
+                          className={cn(
+                            "pt-3 transition-[opacity,transform] duration-200 ease-out",
+                            isExpanded ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0"
+                          )}
+                        >
                     {block.blockType === "links" && (
                       <ul className="mt-2 space-y-1">
                         {block.items.length === 0 && (
@@ -1864,35 +1864,36 @@ export default function LinkPagesScreen() {
                           />
                         </label>
 
-                        <details className="rounded-md border border-slate-200 bg-slate-50 p-2">
-                          <summary className="cursor-pointer select-none text-xs font-semibold text-slate-800">
-                            Añadir por URL
-                          </summary>
-                          <div className="mt-2">
-                            <textarea
-                              value={
-                                Array.isArray(blockConfig.images)
-                                  ? blockConfig.images.join("\n")
-                                  : blockConfig.imageUrl
-                                  ? String(blockConfig.imageUrl)
-                                  : ""
-                              }
-                              onChange={(e) => {
-                                const urls = e.target.value
-                                  .split("\n")
-                                  .map((line) => line.trim())
-                                  .filter(Boolean);
-                                updateBlockConfigLocal(block.id, (config) => ({
-                                  ...config,
-                                  images: urls,
-                                  imageUrl: urls[0] || "",
-                                }));
-                              }}
-                              className="min-h-[80px] w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
-                              placeholder={"https://...\nhttps://..."}
-                            />
-                          </div>
-                        </details>
+                        <CollapsiblePanel
+                          title="Añadir por URL"
+                          description="Pega una URL por línea. Se usarán como galería/slider según el formato."
+                          className="bg-slate-50 shadow-none"
+                          headerClassName="px-3 py-2"
+                          contentClassName="px-3 pb-3"
+                        >
+                          <textarea
+                            value={
+                              Array.isArray(blockConfig.images)
+                                ? blockConfig.images.join("\n")
+                                : blockConfig.imageUrl
+                                ? String(blockConfig.imageUrl)
+                                : ""
+                            }
+                            onChange={(e) => {
+                              const urls = e.target.value
+                                .split("\n")
+                                .map((line) => line.trim())
+                                .filter(Boolean);
+                              updateBlockConfigLocal(block.id, (config) => ({
+                                ...config,
+                                images: urls,
+                                imageUrl: urls[0] || "",
+                              }));
+                            }}
+                            className="min-h-[90px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                            placeholder={"https://...\nhttps://..."}
+                          />
+                        </CollapsiblePanel>
 
                         <div className="grid grid-cols-2 gap-2">
                           <label className="flex flex-col gap-1">
