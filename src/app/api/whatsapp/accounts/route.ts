@@ -15,6 +15,7 @@ export async function GET() {
         id: a.id,
         phoneNumberId: a.phoneNumberId,
         wabaId: a.wabaId ?? null,
+        businessId: a.businessId ?? null,
         label: a.label ?? null,
         expiresIn: a.expiresIn ?? null,
       })),
@@ -26,4 +27,3 @@ export async function GET() {
 }
 
 export const dynamic = "force-dynamic";
-

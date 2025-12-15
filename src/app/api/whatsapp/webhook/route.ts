@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 
-import { findWhatsAppAccountByPhoneNumberId, recordWhatsAppMessage } from "@/lib/db";
+import {
+  completeWhatsAppOnboardingSessionBySignupSessionId,
+  findWhatsAppAccountByPhoneNumberId,
+  findWhatsAppAccountByWabaId,
+  recordWhatsAppMessage,
+  recordWhatsAppWebhookEvent,
+} from "@/lib/db";
 
 function safeJsonParse(text: string) {
   try {
@@ -46,6 +52,9 @@ export async function POST(request: Request) {
 
   const appSecret = process.env.META_APP_SECRET;
   const signatureHeader = request.headers.get("x-hub-signature-256");
+  if (appSecret && !signatureHeader) {
+    return new Response("Missing signature", { status: 403 });
+  }
   if (appSecret && signatureHeader) {
     const ok = verifyMetaSignature({ rawBody, signatureHeader, appSecret });
     if (!ok) {
@@ -60,17 +69,67 @@ export async function POST(request: Request) {
 
   try {
     const entries = Array.isArray(payload?.entry) ? payload.entry : [];
+    const object = payload?.object ? String(payload.object) : null;
 
     for (const entry of entries) {
+      const entryId = entry?.id ? String(entry.id) : null;
       const changes = Array.isArray(entry?.changes) ? entry.changes : [];
       for (const change of changes) {
         const value = change?.value;
+        const field = change?.field ? String(change.field) : null;
         const metadata = value?.metadata;
         const phone_number_id = metadata?.phone_number_id;
-        if (!phone_number_id) continue;
+        const wabaIdGuess =
+          metadata?.waba_id || value?.waba_id || (object === "whatsapp_business_account" ? entryId : null);
+        const businessIdGuess = metadata?.business_id || value?.business_id || null;
+        const signupSessionId =
+          metadata?.signup_session_id || metadata?.session_id || value?.signup_session_id || value?.session_id || null;
 
-        const account = await findWhatsAppAccountByPhoneNumberId(String(phone_number_id));
-        if (!account?.userId) continue;
+        let account =
+          phone_number_id ? await findWhatsAppAccountByPhoneNumberId(String(phone_number_id)) : null;
+        if (!account && wabaIdGuess) {
+          account = await findWhatsAppAccountByWabaId(String(wabaIdGuess));
+        }
+        const userId = account?.userId ?? null;
+
+        // Logging completo del evento (aun si no podemos mapear a usuario todavía).
+        try {
+          await recordWhatsAppWebhookEvent({
+            userId,
+            object,
+            field,
+            entryId,
+            businessId: businessIdGuess ? String(businessIdGuess) : account?.businessId ?? null,
+            wabaId: wabaIdGuess ? String(wabaIdGuess) : account?.wabaId ?? null,
+            phoneNumberId: phone_number_id ? String(phone_number_id) : account?.phoneNumberId ?? null,
+            signupSessionId: signupSessionId ? String(signupSessionId) : null,
+            raw: { entry, change },
+          });
+        } catch (err) {
+          console.error("No se pudo registrar evento de webhook:", err);
+        }
+
+        // Si llega un evento de onboarding/coexistence con signup_session_id, intentamos marcarlo como completed.
+        const eventText = value?.event ? String(value.event) : "";
+        const statusText = value?.status ? String(value.status) : "";
+        const hints = [eventText, statusText].filter(Boolean).join(" ").toUpperCase();
+        if (signupSessionId && hints && (hints.includes("COMPLETE") || hints.includes("FINISH") || hints.includes("SUCCESS"))) {
+          try {
+            await completeWhatsAppOnboardingSessionBySignupSessionId({
+              signupSessionId: String(signupSessionId),
+              phoneNumberId: phone_number_id ? String(phone_number_id) : null,
+              wabaId: wabaIdGuess ? String(wabaIdGuess) : null,
+              businessId: businessIdGuess ? String(businessIdGuess) : null,
+              meta: { webhook: { event: eventText || null, status: statusText || null } },
+            });
+          } catch (err) {
+            console.error("No se pudo completar sesión por signup_session_id:", err);
+          }
+        }
+
+        // Procesamiento de mensajes
+        if (!phone_number_id) continue;
+        if (!userId) continue;
 
         const messages = Array.isArray(value?.messages) ? value.messages : [];
         for (const message of messages) {
@@ -84,7 +143,7 @@ export async function POST(request: Request) {
               : null;
 
           await recordWhatsAppMessage({
-            userId: account.userId,
+            userId,
             phoneNumberId: String(phone_number_id),
             contact: from,
             direction: "inbound",
@@ -107,4 +166,3 @@ export async function POST(request: Request) {
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-

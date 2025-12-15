@@ -29,6 +29,7 @@ export interface LinkPageDesign {
     useProfileAvatar?: boolean;
     useProfileName?: boolean;
     useProfileBio?: boolean;
+    showSocialLinks?: boolean;
   };
 
   typography?: LinkPageTypography;

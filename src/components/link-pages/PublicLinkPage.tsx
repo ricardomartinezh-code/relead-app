@@ -296,6 +296,14 @@ function renderTextBlock(
       : config.size === "lg"
       ? "text-lg"
       : "text-base";
+  const fontFamilyClass =
+    config.fontFamily === "sans"
+      ? "font-sans"
+      : config.fontFamily === "serif"
+      ? "font-serif"
+      : config.fontFamily === "mono"
+      ? "font-mono"
+      : "";
 
   const mergedStyle: CSSProperties = { ...inlineStyle };
   if (tone === "highlight" && options.accentColor) {
@@ -315,6 +323,7 @@ function renderTextBlock(
         className,
         alignClass,
         sizeClass,
+        fontFamilyClass,
         toneClass,
         options.bodySizeClass,
       ]
@@ -329,6 +338,8 @@ function renderTextBlock(
 
 function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | null) {
   const config = block.config || {};
+  const linkUrl =
+    typeof (config as any).linkUrl === "string" ? String((config as any).linkUrl).trim() : "";
   const style = (config.style || {}) as BlockStyleConfig;
   const { className, style: inlineStyle } = buildBlockStyle(style);
   const shapeClass =
@@ -343,6 +354,62 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
       : config.aspect === "1:1"
       ? "aspect-square"
       : "";
+  const display = config.display || "single";
+  const size = config.size || "md";
+  const minHeight = size === "sm" ? 120 : size === "lg" ? 240 : 160;
+  const images: string[] = Array.isArray(config.images)
+    ? (config.images as any[]).map((u) => String(u)).filter(Boolean)
+    : [];
+  if (images.length === 0 && config.imageUrl) {
+    images.push(String(config.imageUrl));
+  }
+
+  const itemStyle = !aspectClass ? ({ height: `${minHeight}px` } as CSSProperties) : undefined;
+  const itemBaseClass = ["relative w-full overflow-hidden", shapeClass, aspectClass]
+    .filter(Boolean)
+    .join(" ");
+
+  const wrapImageTile = (params: {
+    key: string;
+    className: string;
+    style?: CSSProperties;
+    url: string;
+  }) => {
+    const { key, className: tileClassName, style: tileStyle, url } = params;
+    const content = (
+      <Image
+        src={url}
+        alt={config.alt || "Imagen"}
+        fill
+        className="object-cover"
+      />
+    );
+
+    if (linkUrl) {
+      return (
+        <a
+          key={key}
+          href={linkUrl}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={config.alt ? `${config.alt} (abrir link)` : "Abrir link"}
+          className={[
+            tileClassName,
+            "block cursor-pointer transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
+          ].join(" ")}
+          style={tileStyle}
+        >
+          {content}
+        </a>
+      );
+    }
+
+    return (
+      <div key={key} className={tileClassName} style={tileStyle}>
+        {content}
+      </div>
+    );
+  };
 
   return (
     <div
@@ -350,21 +417,60 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
       className={["overflow-hidden", className].filter(Boolean).join(" ")}
       style={inlineStyle}
     >
-      <div className={["relative w-full", aspectClass].filter(Boolean).join(" ")}
-           style={!aspectClass ? { minHeight: "160px" } : undefined}>
-        {config.imageUrl ? (
-          <Image
-            src={config.imageUrl}
-            alt={config.alt || "Imagen"}
-            fill
-            className={["object-cover", shapeClass].join(" ")}
-          />
-        ) : (
-          <div className={["flex h-full w-full items-center justify-center bg-white/5", shapeClass].join(" ")}>
-            <span className="text-xs text-slate-200">Añade una imagen</span>
-          </div>
-        )}
-      </div>
+      {images.length === 0 ? (
+        <div className={["flex w-full items-center justify-center bg-white/5", shapeClass].join(" ")} style={itemStyle}>
+          <span className="text-xs text-slate-200">Añade una imagen</span>
+        </div>
+      ) : display === "carousel" && images.length > 1 ? (
+        <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2">
+          {images.map((url, idx) =>
+            wrapImageTile({
+              key: `${block.id}-img-${idx}`,
+              className: [itemBaseClass, "w-64 shrink-0 snap-center bg-white/5"].join(" "),
+              style: itemStyle,
+              url,
+            })
+          )}
+        </div>
+      ) : display === "mosaic" && images.length > 1 ? (
+        <div className="grid grid-cols-2 gap-2">
+          {images.map((url, idx) =>
+            wrapImageTile({
+              key: `${block.id}-img-${idx}`,
+              className: [
+                itemBaseClass,
+                "bg-white/5",
+                idx === 0 && images.length >= 3 ? "col-span-2" : "",
+              ]
+                .filter(Boolean)
+                .join(" "),
+              style:
+                idx === 0 && images.length >= 3 && !aspectClass
+                  ? ({ height: `${Math.round(minHeight * 1.2)}px` } as CSSProperties)
+                  : itemStyle,
+              url,
+            })
+          )}
+        </div>
+      ) : display === "grid" && images.length > 1 ? (
+        <div className="grid grid-cols-2 gap-2">
+          {images.map((url, idx) =>
+            wrapImageTile({
+              key: `${block.id}-img-${idx}`,
+              className: [itemBaseClass, "bg-white/5"].join(" "),
+              style: itemStyle,
+              url,
+            })
+          )}
+        </div>
+      ) : (
+        wrapImageTile({
+          key: `${block.id}-img-0`,
+          className: [itemBaseClass, "bg-white/5"].join(" "),
+          style: itemStyle,
+          url: images[0],
+        })
+      )}
     </div>
   );
 }
@@ -441,13 +547,29 @@ function renderSeparatorBlock(
     return <div key={block.id} className={["my-4", className].filter(Boolean).join(" ")} style={inlineStyle} />;
   }
 
+  const thicknessRaw = Number(config.thickness ?? 1);
+  const thickness = Number.isFinite(thicknessRaw) ? Math.max(1, Math.min(12, thicknessRaw)) : 1;
+  const allowedLineStyles = new Set(["solid", "dashed", "dotted", "double"]);
+  const lineStyle = allowedLineStyles.has(String(config.lineStyle)) ? String(config.lineStyle) : "solid";
+  const lineColor =
+    (inlineStyle?.borderColor as string | undefined) ||
+    options.textColor ||
+    "rgba(255,255,255,0.15)";
+
   return (
     <div
       key={block.id}
       className={["space-y-2", className].filter(Boolean).join(" ")}
       style={inlineStyle}
     >
-      <div className="h-px w-full bg-white/10" />
+      <div
+        className="w-full"
+        style={{
+          borderTopWidth: thickness,
+          borderTopStyle: lineStyle as any,
+          borderTopColor: lineColor,
+        }}
+      />
       {config.label && (
         <p className={["text-center text-xs text-slate-200", options.bodySizeClass]
           .filter(Boolean)
@@ -515,6 +637,7 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
   const avatarUrl = profile?.avatarUrl || null;
   const socialLinks = Array.isArray(profile?.socialLinks) ? profile?.socialLinks : [];
   const headerDesign = design?.header || {};
+  const showSocialLinks = (headerDesign as any).showSocialLinks !== false;
 
   const header = (
     <div className={`flex flex-col items-center gap-3 text-center ${fontFamilyClass}`}>
@@ -546,17 +669,29 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
           </p>
         )}
       </div>
-      {socialLinks && socialLinks.length > 0 && headerDesign.useProfileBio !== false && (
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {socialLinks.map((link: any, idx: number) => (
-            <span
-              key={`${link.type}-${idx}`}
-              className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-slate-100"
-            >
-              <span>{SOCIAL_ICON_MAP[link.type] || "🔗"}</span>
-              <span className="max-w-[150px] truncate">{link.url}</span>
-            </span>
-          ))}
+      {showSocialLinks && socialLinks && socialLinks.length > 0 && (
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {socialLinks
+            .filter((link: any) => Boolean(link?.url))
+            .slice(0, 5)
+            .map((link: any, idx: number) => (
+              <a
+                key={`${link.type}-${idx}`}
+                href={link.url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10"
+                title={link.type}
+                aria-label={link.type}
+              >
+                {renderSocialIcon({
+                  type: link.type,
+                  imageUrl: link.imageUrl,
+                  size: link.imageUrl ? 28 : 18,
+                  className: link.imageUrl ? "h-7 w-7" : "text-slate-50",
+                })}
+              </a>
+            ))}
         </div>
       )}
     </div>

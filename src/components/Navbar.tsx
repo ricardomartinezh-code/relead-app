@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/components/lib/utils";
+import { ClerkCtaButtons } from "@/components/ClerkCtaButtons";
 
 // En la navegación principal eliminamos el enlace "Legal", ya que los
 // documentos legales se acceden desde el pie de página.  Se mantienen los
@@ -44,12 +45,13 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Button asChild variant="ghost" size="sm" className="px-3 text-slate-700 hover:bg-slate-100">
-            <Link href="/auth/login">Ingresar</Link>
-          </Button>
-          <Button asChild size="sm" className="shadow-sm">
-            <Link href="/auth/register">Crear mi página</Link>
-          </Button>
+          <ClerkCtaButtons
+            signInVariant="ghost"
+            signInSize="sm"
+            signInClassName="px-3 text-slate-700 hover:bg-slate-100"
+            signUpSize="sm"
+            signUpClassName="shadow-sm"
+          />
         </div>
       </div>
     </header>

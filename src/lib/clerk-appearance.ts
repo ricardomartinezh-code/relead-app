@@ -1,4 +1,7 @@
 export const clerkAuthAppearance = {
+  variables: {
+    fontFamily: "var(--font-sans)",
+  },
   elements: {
     card: "bg-transparent shadow-none p-0",
     headerTitle: "hidden",
@@ -17,4 +20,3 @@ export const clerkAuthAppearance = {
     formFieldErrorText: "text-red-300",
   },
 } as const;
-

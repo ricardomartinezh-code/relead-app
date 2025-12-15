@@ -63,7 +63,7 @@ export default async function WabaPage() {
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-[420px,1fr]">
           <div className="space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold text-slate-900">Conectar cuenta</h2>
@@ -76,17 +76,15 @@ export default async function WabaPage() {
             </MetaSdkProvider>
           </div>
 
-          <div className="space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <div className="space-y-1">
-              <h2 className="text-lg font-semibold text-slate-900">Mensajería</h2>
-              <p className="text-sm text-slate-600">
-                Envía mensajes (texto o plantillas) y revisa conversaciones entrantes/salientes.
-              </p>
-            </div>
+          <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
             <WhatsappTestMessagePanel />
-            <p className="text-xs text-slate-500">
-              Webhook (recepción): configura la URL <code>/api/whatsapp/webhook</code> en tu app de Meta y usa <code>WHATSAPP_WEBHOOK_VERIFY_TOKEN</code>.
-            </p>
+            <div className="border-t border-slate-200 px-6 py-3 text-xs text-slate-500">
+              <span className="font-semibold">Webhook (recepción):</span>{" "}
+              <code className="break-all">https://relead.com.mx/api/meta-webhook</code>{" "}
+              <span className="mx-1">·</span>{" "}
+              <span className="font-semibold">token</span>{" "}
+              <code className="break-all">verify_whatsapp_rlead</code>
+            </div>
           </div>
         </div>
       </div>

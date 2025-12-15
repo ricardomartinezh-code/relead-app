@@ -3,6 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { HeroAuthButtons } from "@/components/HeroAuthButtons";
 import {
   Activity,
   ArrowRight,
@@ -111,15 +112,7 @@ export default function HomePage() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <Button asChild size="lg">
-                  <Link href="/auth/register" className="flex items-center gap-2">
-                    Crear mi página
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="border-slate-200 bg-white">
-                  <Link href="/dashboard">Ir al panel</Link>
-                </Button>
+                <HeroAuthButtons />
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 {stats.map((stat) => (

@@ -199,16 +199,114 @@ CREATE TABLE IF NOT EXISTS whats_app_accounts (
   id uuid PRIMARY KEY,
   phone_number_id text NOT NULL UNIQUE,
   waba_id text NULL,
+  business_id text NULL,
   label text NULL,
   access_token text NOT NULL,
   expires_in integer NULL
 );
+
+-- Para instalaciones previas: asegurar columnas nuevas.
+ALTER TABLE IF EXISTS whats_app_accounts
+  ADD COLUMN IF NOT EXISTS waba_id text NULL,
+  ADD COLUMN IF NOT EXISTS business_id text NULL,
+  ADD COLUMN IF NOT EXISTS label text NULL,
+  ADD COLUMN IF NOT EXISTS expires_in integer NULL;
 
 ALTER TABLE IF EXISTS whats_app_accounts
   ADD COLUMN IF NOT EXISTS user_id uuid NULL REFERENCES users(id) ON DELETE CASCADE;
 
 CREATE INDEX IF NOT EXISTS idx_whats_app_accounts_user_id
   ON whats_app_accounts(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_whats_app_accounts_waba_id
+  ON whats_app_accounts(waba_id);
+
+CREATE INDEX IF NOT EXISTS idx_whats_app_accounts_business_id
+  ON whats_app_accounts(business_id);
+
+-- Sesiones de onboarding (Embedded Signup / Coexistence)
+CREATE TABLE IF NOT EXISTS whatsapp_onboarding_sessions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  state text NOT NULL UNIQUE,
+  status text NOT NULL DEFAULT 'started',
+  config_id text NULL,
+  redirect_uri text NULL,
+  phone_number_id text NULL,
+  waba_id text NULL,
+  business_id text NULL,
+  signup_session_id text NULL,
+  meta jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  consumed_at timestamptz NULL,
+  cancelled_at timestamptz NULL,
+  completed_at timestamptz NULL
+);
+
+ALTER TABLE IF EXISTS whatsapp_onboarding_sessions
+  ADD COLUMN IF NOT EXISTS config_id text NULL,
+  ADD COLUMN IF NOT EXISTS redirect_uri text NULL,
+  ADD COLUMN IF NOT EXISTS phone_number_id text NULL,
+  ADD COLUMN IF NOT EXISTS waba_id text NULL,
+  ADD COLUMN IF NOT EXISTS business_id text NULL,
+  ADD COLUMN IF NOT EXISTS signup_session_id text NULL,
+  ADD COLUMN IF NOT EXISTS meta jsonb NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS consumed_at timestamptz NULL,
+  ADD COLUMN IF NOT EXISTS cancelled_at timestamptz NULL,
+  ADD COLUMN IF NOT EXISTS completed_at timestamptz NULL;
+
+-- Solo una sesión activa por usuario (control de concurrencia).
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_whatsapp_onboarding_active_user
+  ON whatsapp_onboarding_sessions(user_id)
+  WHERE status IN ('started', 'pending');
+
+CREATE INDEX IF NOT EXISTS idx_whatsapp_onboarding_sessions_user_created
+  ON whatsapp_onboarding_sessions(user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_whatsapp_onboarding_sessions_signup_session_id
+  ON whatsapp_onboarding_sessions(signup_session_id);
+
+-- Eventos de webhook (logging completo para troubleshooting y auditoría).
+CREATE TABLE IF NOT EXISTS whatsapp_webhook_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NULL REFERENCES users(id) ON DELETE SET NULL,
+  object text NULL,
+  field text NULL,
+  entry_id text NULL,
+  business_id text NULL,
+  waba_id text NULL,
+  phone_number_id text NULL,
+  signup_session_id text NULL,
+  raw jsonb NOT NULL DEFAULT '{}'::jsonb,
+  received_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE IF EXISTS whatsapp_webhook_events
+  ADD COLUMN IF NOT EXISTS object text NULL,
+  ADD COLUMN IF NOT EXISTS field text NULL,
+  ADD COLUMN IF NOT EXISTS entry_id text NULL,
+  ADD COLUMN IF NOT EXISTS business_id text NULL,
+  ADD COLUMN IF NOT EXISTS waba_id text NULL,
+  ADD COLUMN IF NOT EXISTS phone_number_id text NULL,
+  ADD COLUMN IF NOT EXISTS signup_session_id text NULL,
+  ADD COLUMN IF NOT EXISTS raw jsonb NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS received_at timestamptz NOT NULL DEFAULT now();
+
+CREATE INDEX IF NOT EXISTS idx_whatsapp_webhook_events_user_time
+  ON whatsapp_webhook_events(user_id, received_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_whatsapp_webhook_events_business_time
+  ON whatsapp_webhook_events(business_id, received_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_whatsapp_webhook_events_waba_time
+  ON whatsapp_webhook_events(waba_id, received_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_whatsapp_webhook_events_phone_time
+  ON whatsapp_webhook_events(phone_number_id, received_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_whatsapp_webhook_events_signup_session_time
+  ON whatsapp_webhook_events(signup_session_id, received_at DESC);
 
 -- Mensajes WhatsApp (para UI tipo messenger).
 -- Nota: WhatsApp Cloud API requiere webhooks para recepción; este registro
@@ -227,6 +325,15 @@ CREATE TABLE IF NOT EXISTS whatsapp_messages (
   raw jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE IF EXISTS whatsapp_messages
+  ADD COLUMN IF NOT EXISTS message_type text NOT NULL DEFAULT 'text',
+  ADD COLUMN IF NOT EXISTS text_body text NULL,
+  ADD COLUMN IF NOT EXISTS template_name text NULL,
+  ADD COLUMN IF NOT EXISTS template_language text NULL,
+  ADD COLUMN IF NOT EXISTS meta_message_id text NULL,
+  ADD COLUMN IF NOT EXISTS raw jsonb NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
 
 CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_user_phone_contact_time
   ON whatsapp_messages(user_id, phone_number_id, contact, created_at);

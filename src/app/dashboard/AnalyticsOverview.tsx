@@ -1,12 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity } from "lucide-react";
+import Link from "next/link";
+import { Activity, ArrowUpRight, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type AnalyticsResponse = {
   totals: { views: number; clicks: number; ctr: number };
   topLink: { type: "link" | "item"; id: string; label: string; clicks: number } | null;
   series: Array<{ day: string; views: number; clicks: number }>;
+  breakdown: {
+    devices: Array<{ label: string; count: number }>;
+    referrers: Array<{ label: string; count: number }>;
+  };
+  profile?: { slug: string; title: string | null };
   lastUpdated: string;
   demo?: boolean;
 };
@@ -20,6 +28,25 @@ function formatPercent(value: number) {
     style: "percent",
     maximumFractionDigits: 1,
   }).format(value);
+}
+
+function formatSourceLabel(raw: string) {
+  const value = String(raw || "").trim().toLowerCase();
+  if (!value || value === "direct" || value === "(direct)") return "Directo";
+  return value;
+}
+
+function formatDeviceLabel(raw: string) {
+  const value = String(raw || "").trim().toLowerCase();
+  if (value === "mobile") return "Móvil";
+  if (value === "tablet") return "Tablet";
+  return "Escritorio";
+}
+
+function buildBarWidth(count: number, total: number) {
+  if (!total) return "0%";
+  const pct = Math.max(0, Math.min(1, count / total));
+  return `${Math.round(pct * 100)}%`;
 }
 
 function buildPolyline(
@@ -139,6 +166,11 @@ export default function AnalyticsOverview() {
 
   if (!data) return null;
 
+  const devices = data.breakdown?.devices ?? [];
+  const referrers = data.breakdown?.referrers ?? [];
+  const totalDeviceViews = devices.reduce((sum, d) => sum + (d.count || 0), 0);
+  const totalRefViews = referrers.reduce((sum, r) => sum + (r.count || 0), 0);
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
@@ -158,50 +190,158 @@ export default function AnalyticsOverview() {
         </span>
       </div>
 
-      <div className="h-28 w-full rounded-xl bg-gradient-to-b from-slate-50 to-white p-2">
-        <svg
-          viewBox="0 0 520 120"
-          className="h-full w-full"
-          role="img"
-          aria-label="Serie de vistas y clics (últimos 7 días)"
-        >
-          <polyline
-            points={viewsLine}
-            fill="none"
-            stroke="rgb(15 23 42)"
-            strokeWidth="2"
-            strokeOpacity="0.8"
-          />
-          <polyline
-            points={clicksLine}
-            fill="none"
-            stroke="rgb(16 185 129)"
-            strokeWidth="2"
-            strokeOpacity="0.9"
-          />
-        </svg>
-      </div>
+      <Tabs defaultValue="evolucion">
+        <TabsList className="w-full justify-start">
+          <TabsTrigger value="evolucion">Evolución</TabsTrigger>
+          <TabsTrigger value="origen">Origen y dispositivos</TabsTrigger>
+          <TabsTrigger value="acciones">Acciones rápidas</TabsTrigger>
+        </TabsList>
 
-      <div className="grid grid-cols-3 gap-2 text-center text-xs text-slate-600">
-        <div className="rounded-lg border border-slate-200 bg-slate-50 py-2">
-          <p className="text-sm font-semibold text-slate-900">
-            {formatCompactNumber(data.totals.clicks)}
-          </p>
-          <p>Clics</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-slate-50 py-2">
-          <p className="text-sm font-semibold text-slate-900">
-            {formatPercent(data.totals.ctr)}
-          </p>
-          <p>CTR</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-slate-50 py-2">
-          <p className="text-sm font-semibold text-slate-900">
-            {data.topLink ? data.topLink.label : "—"}
-          </p>
-          <p>Top enlace</p>
-        </div>
-      </div>
+        <TabsContent value="evolucion" className="animate-in fade-in-0 slide-in-from-top-1 duration-200">
+          <div className="h-28 w-full rounded-xl bg-gradient-to-b from-slate-50 to-white p-2">
+            <svg
+              viewBox="0 0 520 120"
+              className="h-full w-full"
+              role="img"
+              aria-label="Serie de vistas y clics (últimos 7 días)"
+            >
+              <polyline
+                points={viewsLine}
+                fill="none"
+                stroke="rgb(15 23 42)"
+                strokeWidth="2"
+                strokeOpacity="0.8"
+              />
+              <polyline
+                points={clicksLine}
+                fill="none"
+                stroke="rgb(16 185 129)"
+                strokeWidth="2"
+                strokeOpacity="0.9"
+              />
+            </svg>
+          </div>
+
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-slate-600">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 py-2">
+              <p className="text-sm font-semibold text-slate-900">
+                {formatCompactNumber(data.totals.clicks)}
+              </p>
+              <p>Clics</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 py-2">
+              <p className="text-sm font-semibold text-slate-900">
+                {formatPercent(data.totals.ctr)}
+              </p>
+              <p>CTR</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 py-2">
+              <p className="text-sm font-semibold text-slate-900">
+                {data.topLink ? data.topLink.label : "—"}
+              </p>
+              <p>Top enlace</p>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="origen" className="animate-in fade-in-0 slide-in-from-top-1 duration-200">
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Dispositivos (vistas)
+              </div>
+              <div className="mt-2 space-y-2">
+                {devices.length === 0 ? (
+                  <p className="text-sm text-slate-500">Aún no hay datos.</p>
+                ) : (
+                  devices.map((d) => (
+                    <div key={d.label} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-slate-900">
+                          {formatDeviceLabel(d.label)}
+                        </span>
+                        <span className="text-slate-600">{formatCompactNumber(d.count)}</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-slate-100">
+                        <div
+                          className="h-2 rounded-full bg-slate-900"
+                          style={{ width: buildBarWidth(d.count, totalDeviceViews) }}
+                        />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Origen (referrer)
+              </div>
+              <div className="mt-2 space-y-2">
+                {referrers.length === 0 ? (
+                  <p className="text-sm text-slate-500">Aún no hay datos.</p>
+                ) : (
+                  referrers.map((r) => (
+                    <div key={r.label} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-slate-900">
+                          {formatSourceLabel(r.label)}
+                        </span>
+                        <span className="text-slate-600">{formatCompactNumber(r.count)}</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-slate-100">
+                        <div
+                          className="h-2 rounded-full bg-emerald-600"
+                          style={{ width: buildBarWidth(r.count, totalRefViews) }}
+                        />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="acciones" className="animate-in fade-in-0 slide-in-from-top-1 duration-200">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button asChild variant="outline" className="justify-between">
+              <Link href="/dashboard/link-pages">
+                Editar páginas
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-between">
+              <Link href="/dashboard/waba">
+                Conectar WABA
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-between">
+              <Link href="/dashboard/settings">
+                Ajustes
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            {data.profile?.slug ? (
+              <Button asChild className="justify-between">
+                <a href={`/${data.profile.slug}`} target="_blank" rel="noreferrer">
+                  Ver página pública
+                  <Sparkles className="h-4 w-4" />
+                </a>
+              </Button>
+            ) : null}
+          </div>
+
+          {data.topLink ? (
+            <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+              <span className="font-semibold text-slate-900">Top enlace:</span>{" "}
+              {data.topLink.label} · {formatCompactNumber(data.topLink.clicks)} clics
+            </div>
+          ) : null}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

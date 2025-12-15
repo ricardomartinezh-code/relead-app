@@ -76,6 +76,7 @@ export type WhatsAppAccountRecord = {
   userId?: string | null;
   phoneNumberId: string;
   wabaId?: string;
+  businessId?: string | null;
   label?: string | null;
   accessToken: string;
   expiresIn?: number | null;
@@ -629,7 +630,7 @@ export async function findWhatsAppAccountByPhoneNumberId(
 ): Promise<WhatsAppAccountRecord | null> {
   try {
     const result = await pool.query(
-      "SELECT id, user_id AS \"userId\", phone_number_id AS \"phoneNumberId\", waba_id AS \"wabaId\", label, access_token AS \"accessToken\", expires_in AS \"expiresIn\" FROM whats_app_accounts WHERE phone_number_id = $1 LIMIT 1",
+      "SELECT id, user_id AS \"userId\", phone_number_id AS \"phoneNumberId\", waba_id AS \"wabaId\", business_id AS \"businessId\", label, access_token AS \"accessToken\", expires_in AS \"expiresIn\" FROM whats_app_accounts WHERE phone_number_id = $1 LIMIT 1",
       [phoneNumberId]
     );
     return result.rows[0] || null;
@@ -645,7 +646,7 @@ export async function findWhatsAppAccountByPhoneNumberIdForUser(
 ): Promise<WhatsAppAccountRecord | null> {
   try {
     const result = await pool.query(
-      "SELECT id, user_id AS \"userId\", phone_number_id AS \"phoneNumberId\", waba_id AS \"wabaId\", label, access_token AS \"accessToken\", expires_in AS \"expiresIn\" FROM whats_app_accounts WHERE user_id = $1 AND phone_number_id = $2 LIMIT 1",
+      "SELECT id, user_id AS \"userId\", phone_number_id AS \"phoneNumberId\", waba_id AS \"wabaId\", business_id AS \"businessId\", label, access_token AS \"accessToken\", expires_in AS \"expiresIn\" FROM whats_app_accounts WHERE user_id = $1 AND phone_number_id = $2 LIMIT 1",
       [userId, phoneNumberId]
     );
     return result.rows[0] || null;
@@ -660,7 +661,7 @@ export async function listWhatsAppAccountsByUserId(
 ): Promise<WhatsAppAccountRecord[]> {
   try {
     const result = await pool.query(
-      "SELECT id, user_id AS \"userId\", phone_number_id AS \"phoneNumberId\", waba_id AS \"wabaId\", label, access_token AS \"accessToken\", expires_in AS \"expiresIn\" FROM whats_app_accounts WHERE user_id = $1 ORDER BY phone_number_id ASC",
+      "SELECT id, user_id AS \"userId\", phone_number_id AS \"phoneNumberId\", waba_id AS \"wabaId\", business_id AS \"businessId\", label, access_token AS \"accessToken\", expires_in AS \"expiresIn\" FROM whats_app_accounts WHERE user_id = $1 ORDER BY phone_number_id ASC",
       [userId]
     );
     return result.rows || [];
@@ -677,18 +678,19 @@ export async function upsertWhatsAppAccount(
   phoneNumberId: string,
   wabaId: string,
   accessToken: string,
+  businessId?: string | null,
   label?: string | null,
   expiresIn?: number | null
 ): Promise<WhatsAppAccountRecord> {
   try {
     const id = randomUUID();
     const result = await pool.query(
-      `INSERT INTO whats_app_accounts (id, phone_number_id, waba_id, label, access_token, expires_in)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO whats_app_accounts (id, phone_number_id, waba_id, business_id, label, access_token, expires_in)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (phone_number_id) DO UPDATE
-       SET access_token = $5, expires_in = $6, waba_id = $3, label = $4
-       RETURNING id, user_id AS "userId", phone_number_id AS "phoneNumberId", waba_id AS "wabaId", label, access_token AS "accessToken", expires_in AS "expiresIn"`,
-      [id, phoneNumberId, wabaId, label || null, accessToken, expiresIn || null]
+       SET access_token = $6, expires_in = $7, waba_id = $3, business_id = $4, label = $5
+       RETURNING id, user_id AS "userId", phone_number_id AS "phoneNumberId", waba_id AS "wabaId", business_id AS "businessId", label, access_token AS "accessToken", expires_in AS "expiresIn"`,
+      [id, phoneNumberId, wabaId, businessId || null, label || null, accessToken, expiresIn || null]
     );
     return result.rows[0];
   } catch (error) {
@@ -702,19 +704,20 @@ export async function upsertWhatsAppAccountForUser(
   phoneNumberId: string,
   wabaId: string,
   accessToken: string,
+  businessId?: string | null,
   label?: string | null,
   expiresIn?: number | null
 ): Promise<WhatsAppAccountRecord> {
   try {
     const id = randomUUID();
     const result = await pool.query(
-      `INSERT INTO whats_app_accounts (id, user_id, phone_number_id, waba_id, label, access_token, expires_in)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO whats_app_accounts (id, user_id, phone_number_id, waba_id, business_id, label, access_token, expires_in)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (phone_number_id) DO UPDATE
-       SET user_id = $2, access_token = $6, expires_in = $7, waba_id = $4, label = $5
+       SET user_id = $2, access_token = $7, expires_in = $8, waba_id = $4, business_id = $5, label = $6
        WHERE whats_app_accounts.user_id IS NULL OR whats_app_accounts.user_id = $2
-       RETURNING id, user_id AS "userId", phone_number_id AS "phoneNumberId", waba_id AS "wabaId", label, access_token AS "accessToken", expires_in AS "expiresIn"`,
-      [id, userId, phoneNumberId, wabaId, label || null, accessToken, expiresIn || null]
+       RETURNING id, user_id AS "userId", phone_number_id AS "phoneNumberId", waba_id AS "wabaId", business_id AS "businessId", label, access_token AS "accessToken", expires_in AS "expiresIn"`,
+      [id, userId, phoneNumberId, wabaId, businessId || null, label || null, accessToken, expiresIn || null]
     );
     if (!result.rows[0]) {
       throw new Error("La cuenta ya está asociada a otro usuario.");
@@ -724,6 +727,315 @@ export async function upsertWhatsAppAccountForUser(
     console.error("Error actualizando cuenta de WhatsApp (por usuario):", error);
     throw error;
   }
+}
+
+export type WhatsAppOnboardingSessionStatus =
+  | "started"
+  | "pending"
+  | "consumed"
+  | "cancelled"
+  | "completed"
+  | "failed";
+
+export type WhatsAppOnboardingSessionRecord = {
+  id: string;
+  userId: string;
+  state: string;
+  status: WhatsAppOnboardingSessionStatus;
+  configId?: string | null;
+  redirectUri?: string | null;
+  phoneNumberId?: string | null;
+  wabaId?: string | null;
+  businessId?: string | null;
+  signupSessionId?: string | null;
+  meta: any;
+  createdAt: Date;
+  updatedAt: Date;
+  consumedAt?: Date | null;
+  cancelledAt?: Date | null;
+  completedAt?: Date | null;
+};
+
+function mapWhatsAppOnboardingSession(row: any): WhatsAppOnboardingSessionRecord {
+  return {
+    id: row.id,
+    userId: row.userId,
+    state: row.state,
+    status: row.status,
+    configId: row.configId ?? null,
+    redirectUri: row.redirectUri ?? null,
+    phoneNumberId: row.phoneNumberId ?? null,
+    wabaId: row.wabaId ?? null,
+    businessId: row.businessId ?? null,
+    signupSessionId: row.signupSessionId ?? null,
+    meta: row.meta ?? {},
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    consumedAt: row.consumedAt ?? null,
+    cancelledAt: row.cancelledAt ?? null,
+    completedAt: row.completedAt ?? null,
+  };
+}
+
+export async function getActiveWhatsAppOnboardingSessionByUserId(
+  userId: string
+): Promise<WhatsAppOnboardingSessionRecord | null> {
+  const result = await pool.query(
+    `SELECT
+      id,
+      user_id AS "userId",
+      state,
+      status,
+      config_id AS "configId",
+      redirect_uri AS "redirectUri",
+      phone_number_id AS "phoneNumberId",
+      waba_id AS "wabaId",
+      business_id AS "businessId",
+      signup_session_id AS "signupSessionId",
+      meta,
+      created_at AS "createdAt",
+      updated_at AS "updatedAt",
+      consumed_at AS "consumedAt",
+      cancelled_at AS "cancelledAt",
+      completed_at AS "completedAt"
+    FROM whatsapp_onboarding_sessions
+    WHERE user_id = $1 AND status IN ('started','pending')
+    ORDER BY created_at DESC
+    LIMIT 1`,
+    [userId]
+  );
+  return result.rows[0] ? mapWhatsAppOnboardingSession(result.rows[0]) : null;
+}
+
+export async function createOrReuseWhatsAppOnboardingSession(params: {
+  userId: string;
+  state: string;
+  configId?: string | null;
+  redirectUri?: string | null;
+}): Promise<{ session: WhatsAppOnboardingSessionRecord; reused: boolean }> {
+  const existing = await getActiveWhatsAppOnboardingSessionByUserId(params.userId);
+  if (existing) {
+    const requestedConfigId = params.configId ?? null;
+    const existingConfigId = existing.configId ?? null;
+    if (requestedConfigId && existingConfigId && requestedConfigId !== existingConfigId) {
+      throw new Error(
+        "Ya hay un intento de onboarding activo con otra variante. Cancela el intento actual para iniciar uno nuevo."
+      );
+    }
+    return { session: existing, reused: true };
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO whatsapp_onboarding_sessions (user_id, state, status, config_id, redirect_uri)
+       VALUES ($1, $2, 'started', $3, $4)
+       RETURNING
+         id,
+         user_id AS "userId",
+         state,
+         status,
+         config_id AS "configId",
+         redirect_uri AS "redirectUri",
+         phone_number_id AS "phoneNumberId",
+         waba_id AS "wabaId",
+         business_id AS "businessId",
+         signup_session_id AS "signupSessionId",
+         meta,
+         created_at AS "createdAt",
+         updated_at AS "updatedAt",
+         consumed_at AS "consumedAt",
+         cancelled_at AS "cancelledAt",
+         completed_at AS "completedAt"`,
+      [params.userId, params.state, params.configId ?? null, params.redirectUri ?? null]
+    );
+    return { session: mapWhatsAppOnboardingSession(result.rows[0]), reused: false };
+  } catch (error: any) {
+    // Si hay una carrera y ya existe una sesión activa, reutilizamos.
+    if (error?.code === "23505") {
+      const existingAfter = await getActiveWhatsAppOnboardingSessionByUserId(params.userId);
+      if (existingAfter) return { session: existingAfter, reused: true };
+    }
+    throw error;
+  }
+}
+
+export async function cancelActiveWhatsAppOnboardingSessions(userId: string) {
+  await pool.query(
+    `UPDATE whatsapp_onboarding_sessions
+     SET status = 'cancelled', cancelled_at = now(), updated_at = now()
+     WHERE user_id = $1 AND status IN ('started','pending')`,
+    [userId]
+  );
+}
+
+export async function consumeWhatsAppOnboardingSession(params: {
+  userId: string;
+  state: string;
+}): Promise<WhatsAppOnboardingSessionRecord | null> {
+  const result = await pool.query(
+    `UPDATE whatsapp_onboarding_sessions
+     SET status = 'consumed', consumed_at = now(), updated_at = now()
+     WHERE user_id = $1 AND state = $2 AND status IN ('started','pending')
+     RETURNING
+       id,
+       user_id AS "userId",
+       state,
+       status,
+       config_id AS "configId",
+       redirect_uri AS "redirectUri",
+       phone_number_id AS "phoneNumberId",
+       waba_id AS "wabaId",
+       business_id AS "businessId",
+       signup_session_id AS "signupSessionId",
+       meta,
+       created_at AS "createdAt",
+       updated_at AS "updatedAt",
+       consumed_at AS "consumedAt",
+       cancelled_at AS "cancelledAt",
+       completed_at AS "completedAt"`,
+    [params.userId, params.state]
+  );
+  return result.rows[0] ? mapWhatsAppOnboardingSession(result.rows[0]) : null;
+}
+
+export async function completeWhatsAppOnboardingSession(params: {
+  userId: string;
+  state: string;
+  phoneNumberId?: string | null;
+  wabaId?: string | null;
+  businessId?: string | null;
+  signupSessionId?: string | null;
+  meta?: any;
+}) {
+  await pool.query(
+    `UPDATE whatsapp_onboarding_sessions
+     SET
+       status = 'completed',
+       phone_number_id = COALESCE($3, phone_number_id),
+       waba_id = COALESCE($4, waba_id),
+       business_id = COALESCE($5, business_id),
+       signup_session_id = COALESCE($6, signup_session_id),
+       meta = COALESCE(meta, '{}'::jsonb) || COALESCE($7::jsonb, '{}'::jsonb),
+       completed_at = now(),
+       updated_at = now()
+     WHERE user_id = $1 AND state = $2`,
+    [
+      params.userId,
+      params.state,
+      params.phoneNumberId ?? null,
+      params.wabaId ?? null,
+      params.businessId ?? null,
+      params.signupSessionId ?? null,
+      JSON.stringify(params.meta ?? {}),
+    ]
+  );
+}
+
+export async function completeWhatsAppOnboardingSessionBySignupSessionId(params: {
+  signupSessionId: string;
+  phoneNumberId?: string | null;
+  wabaId?: string | null;
+  businessId?: string | null;
+  meta?: any;
+}) {
+  await pool.query(
+    `UPDATE whatsapp_onboarding_sessions
+     SET
+       status = 'completed',
+       phone_number_id = COALESCE($2, phone_number_id),
+       waba_id = COALESCE($3, waba_id),
+       business_id = COALESCE($4, business_id),
+       meta = COALESCE(meta, '{}'::jsonb) || COALESCE($5::jsonb, '{}'::jsonb),
+       completed_at = now(),
+       updated_at = now()
+     WHERE signup_session_id = $1`,
+    [
+      params.signupSessionId,
+      params.phoneNumberId ?? null,
+      params.wabaId ?? null,
+      params.businessId ?? null,
+      JSON.stringify(params.meta ?? {}),
+    ]
+  );
+}
+
+export async function failWhatsAppOnboardingSession(params: {
+  userId: string;
+  state: string;
+  meta?: any;
+}) {
+  await pool.query(
+    `UPDATE whatsapp_onboarding_sessions
+     SET status = 'failed',
+         meta = COALESCE(meta, '{}'::jsonb) || COALESCE($3::jsonb, '{}'::jsonb),
+         updated_at = now()
+     WHERE user_id = $1 AND state = $2`,
+    [params.userId, params.state, JSON.stringify(params.meta ?? {})]
+  );
+}
+
+export type WhatsAppWebhookEventRecord = {
+  id: string;
+  userId?: string | null;
+  object?: string | null;
+  field?: string | null;
+  entryId?: string | null;
+  businessId?: string | null;
+  wabaId?: string | null;
+  phoneNumberId?: string | null;
+  signupSessionId?: string | null;
+  raw: any;
+  receivedAt: Date;
+};
+
+export async function recordWhatsAppWebhookEvent(params: {
+  userId?: string | null;
+  object?: string | null;
+  field?: string | null;
+  entryId?: string | null;
+  businessId?: string | null;
+  wabaId?: string | null;
+  phoneNumberId?: string | null;
+  signupSessionId?: string | null;
+  raw: any;
+}): Promise<WhatsAppWebhookEventRecord> {
+  const result = await pool.query(
+    `INSERT INTO whatsapp_webhook_events
+      (user_id, object, field, entry_id, business_id, waba_id, phone_number_id, signup_session_id, raw)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)
+     RETURNING
+       id,
+       user_id AS "userId",
+       object,
+       field,
+       entry_id AS "entryId",
+       business_id AS "businessId",
+       waba_id AS "wabaId",
+       phone_number_id AS "phoneNumberId",
+       signup_session_id AS "signupSessionId",
+       raw,
+       received_at AS "receivedAt"`,
+    [
+      params.userId ?? null,
+      params.object ?? null,
+      params.field ?? null,
+      params.entryId ?? null,
+      params.businessId ?? null,
+      params.wabaId ?? null,
+      params.phoneNumberId ?? null,
+      params.signupSessionId ?? null,
+      JSON.stringify(params.raw ?? {}),
+    ]
+  );
+  return result.rows[0];
+}
+
+export async function findWhatsAppAccountByWabaId(wabaId: string): Promise<WhatsAppAccountRecord | null> {
+  const result = await pool.query(
+    "SELECT id, user_id AS \"userId\", phone_number_id AS \"phoneNumberId\", waba_id AS \"wabaId\", business_id AS \"businessId\", label, access_token AS \"accessToken\", expires_in AS \"expiresIn\" FROM whats_app_accounts WHERE waba_id = $1 LIMIT 1",
+    [wabaId]
+  );
+  return result.rows[0] || null;
 }
 
 export type WhatsAppMessageDirection = "inbound" | "outbound";

@@ -4,6 +4,11 @@ export type AnalyticsResponse = {
   totals: { views: number; clicks: number; ctr: number };
   topLink: { type: "link" | "item"; id: string; label: string; clicks: number } | null;
   series: Array<{ day: string; views: number; clicks: number }>;
+  breakdown: {
+    devices: Array<{ label: string; count: number }>;
+    referrers: Array<{ label: string; count: number }>;
+  };
+  profile?: { slug: string; title: string | null };
   lastUpdated: string;
   demo?: boolean;
 };
@@ -35,6 +40,8 @@ export async function getAnalyticsOverviewForClerkUserId(
       totals: { views: 0, clicks: 0, ctr: 0 },
       topLink: null,
       series: days.map((day) => ({ day, views: 0, clicks: 0 })),
+      breakdown: { devices: [], referrers: [] },
+      profile: { slug: "demo", title: "Demo" },
       lastUpdated: new Date().toISOString(),
       demo: true,
     };
@@ -57,13 +64,46 @@ export async function getAnalyticsOverviewForClerkUserId(
   since.setUTCDate(since.getUTCDate() - 6);
   since.setUTCHours(0, 0, 0, 0);
 
-  const [viewsTotalRows, linkClicksTotalRows] = await Promise.all([
+  const [
+    viewsTotalRows,
+    linkClicksTotalRows,
+    profileRows,
+    deviceRows,
+    referrerRows,
+  ] = await Promise.all([
     sql/*sql*/`SELECT COUNT(*)::int AS count FROM page_views WHERE profile_id = ${profileId}`,
     sql/*sql*/`
       SELECT COUNT(*)::int AS count
       FROM link_clicks lc
       JOIN links l ON l.id = lc.link_id
       WHERE l.profile_id = ${profileId}
+    `,
+    sql/*sql*/`SELECT slug, title FROM profiles WHERE id = ${profileId} LIMIT 1`,
+    sql/*sql*/`
+      SELECT
+        CASE
+          WHEN user_agent ILIKE '%iPad%' OR user_agent ILIKE '%Tablet%' THEN 'tablet'
+          WHEN user_agent ILIKE '%Mobi%' OR user_agent ILIKE '%Android%' OR user_agent ILIKE '%iPhone%' THEN 'mobile'
+          ELSE 'desktop'
+        END AS label,
+        COUNT(*)::int AS count
+      FROM page_views
+      WHERE profile_id = ${profileId} AND created_at >= ${since.toISOString()}::timestamptz
+      GROUP BY 1
+      ORDER BY count DESC
+    `,
+    sql/*sql*/`
+      SELECT
+        CASE
+          WHEN referrer IS NULL OR referrer = '' THEN 'direct'
+          ELSE lower(regexp_replace(referrer, '^https?://([^/]+).*$','\\1'))
+        END AS label,
+        COUNT(*)::int AS count
+      FROM page_views
+      WHERE profile_id = ${profileId} AND created_at >= ${since.toISOString()}::timestamptz
+      GROUP BY 1
+      ORDER BY count DESC
+      LIMIT 5
     `,
   ]);
 
@@ -195,7 +235,22 @@ export async function getAnalyticsOverviewForClerkUserId(
     },
     topLink,
     series,
+    breakdown: {
+      devices: (deviceRows as any[]).map((r) => ({
+        label: String(r.label),
+        count: Number(r.count),
+      })),
+      referrers: (referrerRows as any[]).map((r) => ({
+        label: String(r.label),
+        count: Number(r.count),
+      })),
+    },
+    profile: profileRows[0]
+      ? {
+          slug: String((profileRows as any[])[0].slug),
+          title: (profileRows as any[])[0].title ? String((profileRows as any[])[0].title) : null,
+        }
+      : undefined,
     lastUpdated: new Date().toISOString(),
   };
 }
-

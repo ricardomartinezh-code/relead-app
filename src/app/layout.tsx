@@ -61,7 +61,7 @@ export default function RootLayout({
       {/* Prefijo ogp.me para Open Graph */}
       <html lang="es" prefix="og: http://ogp.me/ns#">
         <body
-          className={`${inter.variable} ${jetBrainsMono.variable} antialiased`}
+          className={`${inter.variable} ${jetBrainsMono.variable} font-sans antialiased`}
         >
           {children}
           {/* Añadimos el pie de página al final del documento */}

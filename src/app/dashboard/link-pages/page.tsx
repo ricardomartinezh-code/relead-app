@@ -4,6 +4,7 @@ import { getPublicLink } from "@/lib/urls";
 import { type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { cn } from "@/components/lib/utils";
 import type {
   LinkPageSummary,
   LinkPageWithContent,
@@ -14,6 +15,7 @@ import type {
 import type { ProfileRecord } from "@/lib/db";
 import PublicLinkPage from "@/components/link-pages/PublicLinkPage";
 import { Button } from "@/components/ui/button";
+import { ChevronDown } from "lucide-react";
 
 interface ApiListPagesResponse {
   pages: LinkPageSummary[];
@@ -57,6 +59,7 @@ const defaultDesign: LinkPageDesign = {
     useProfileAvatar: true,
     useProfileName: true,
     useProfileBio: true,
+    showSocialLinks: true,
   },
   typography: {
     headingSize: "md",
@@ -73,6 +76,7 @@ const defaultBlockConfigs: Record<string, any> = {
     content: "",
     align: "center",
     size: "md",
+    fontFamily: "system",
     tone: "default",
     style: {
       variant: "default",
@@ -82,7 +86,11 @@ const defaultBlockConfigs: Record<string, any> = {
   },
   image: {
     imageUrl: "",
+    images: [],
+    linkUrl: "",
     alt: "",
+    display: "single",
+    size: "md",
     shape: "rounded",
     aspect: "auto",
     style: {
@@ -98,6 +106,8 @@ const defaultBlockConfigs: Record<string, any> = {
   separator: {
     variant: "line",
     label: null,
+    thickness: 1,
+    lineStyle: "solid",
   },
 };
 
@@ -412,8 +422,9 @@ export default function LinkPagesScreen() {
   const [pageForm, setPageForm] = useState({ internalName: "", slug: "" });
   const [pageSlugEdited, setPageSlugEdited] = useState(false);
   const [pageFormError, setPageFormError] = useState<string | null>(null);
-  const [blockForm, setBlockForm] = useState({ title: "", blockType: "links" });
+  const [blockForm, setBlockForm] = useState({ title: "", blockType: "text" });
   const [blockCreating, setBlockCreating] = useState(false);
+  const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>({});
   // Drafts for new link items keyed by block id.  In addition to label and URL,
   // a draft can contain optional iconType (e.g. "instagram", "twitter", "custom"),
   // a specific icon key (for default icons) and an imageUrl for custom uploads.
@@ -497,6 +508,12 @@ export default function LinkPagesScreen() {
    * Añade una nueva red social vacía al listado.
    */
   const handleAddSocial = () => {
+    setSocialError(null);
+    setSocialMessage(null);
+    if (socialLinks.length >= 5) {
+      setSocialError("Máximo 5 redes por el espacio en la cabecera.");
+      return;
+    }
     setSocialLinks((prev) => [...prev, { type: "custom", url: "" }]);
   };
 
@@ -544,16 +561,27 @@ export default function LinkPagesScreen() {
       setSocialSaving(true);
       setSocialError(null);
       setSocialMessage(null);
+
+      const payloadLinks = socialLinks
+        .slice(0, 5)
+        .map((link) => ({
+          type: (link.type || "custom").trim() || "custom",
+          url: (link.url || "").trim(),
+          imageUrl: link.imageUrl || null,
+        }))
+        .filter((link) => Boolean(link.url));
+
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify({ socialLinks }),
+        body: JSON.stringify({ socialLinks: payloadLinks }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "No se pudo guardar las redes sociales");
       }
       await res.json().catch(() => ({}));
+      setSocialLinks(payloadLinks);
       setSocialMessage("Redes sociales actualizadas");
     } catch (err: any) {
       setSocialError(err.message || "Error guardando redes sociales");
@@ -937,13 +965,32 @@ export default function LinkPagesScreen() {
   };
 
   const handleBlockImageUpload = async (e: any, blockId: string) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from((e?.target?.files as FileList | undefined) ?? []);
+    if (files.length === 0) return;
+
     try {
-      const url = await uploadImageFile(file);
-      updateBlockConfigLocal(blockId, (config) => ({ ...config, imageUrl: url }));
+      const uploadedUrls: string[] = [];
+      for (const file of files) {
+        uploadedUrls.push(await uploadImageFile(file));
+      }
+
+      updateBlockConfigLocal(blockId, (config) => {
+        const existing = Array.isArray(config.images)
+          ? config.images
+          : config.imageUrl
+          ? [config.imageUrl]
+          : [];
+        const images = [...existing, ...uploadedUrls].filter(Boolean);
+        return {
+          ...config,
+          images,
+          imageUrl: images[0] || "",
+        };
+      });
     } catch (err) {
       console.error(err);
+    } finally {
+      if (e?.target) e.target.value = "";
     }
   };
 
@@ -1141,7 +1188,7 @@ export default function LinkPagesScreen() {
         name: profile.title ?? null,
         bio: profile.bio ?? null,
         avatarUrl: profile.avatarUrl ?? null,
-        socialLinks: [],
+        socialLinks,
         settings: {},
       }
     : undefined;
@@ -1422,10 +1469,8 @@ export default function LinkPagesScreen() {
                     }
                     className="w-32 rounded-md border border-slate-300 px-2 py-1 text-sm"
                   >
-                    <option value="links">Links</option>
                     <option value="text">Texto</option>
                     <option value="image">Imagen</option>
-                    <option value="social">Redes sociales</option>
                     <option value="separator">Separador</option>
                   </select>
                 </label>
@@ -1436,6 +1481,116 @@ export default function LinkPagesScreen() {
                 >
                   {blockCreating ? "Añadiendo..." : "+ Añadir bloque"}
                 </button>
+              </form>
+            )}
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Redes sociales
+                </p>
+                <p className="text-sm font-medium text-slate-900">
+                  Se muestran en tu página pública con su icono
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddSocial}
+                disabled={socialLoading}
+              >
+                + Añadir red
+              </Button>
+            </div>
+
+            {socialLoading ? (
+              <p className="text-sm text-slate-500">Cargando redes…</p>
+            ) : (
+              <form onSubmit={handleSaveSocial} className="space-y-3">
+                {socialError && <div className="text-sm text-red-600">{socialError}</div>}
+                {socialMessage && (
+                  <div className="text-sm text-emerald-600">{socialMessage}</div>
+                )}
+
+                {socialLinks.length === 0 ? (
+                  <p className="text-sm text-slate-500">Aún no tienes redes añadidas.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {socialLinks.map((link, index) => (
+                      <div
+                        key={`${link.type}-${index}`}
+                        className="grid gap-2 md:grid-cols-[180px,1fr,200px,auto]"
+                      >
+                        <select
+                          value={link.type}
+                          onChange={(e) => handleSocialChange(index, "type", e.target.value)}
+                          className="w-full rounded-md border border-slate-300 bg-white px-2 py-2 text-sm"
+                        >
+                          {SOCIAL_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+
+                        <input
+                          type="url"
+                          value={link.url}
+                          onChange={(e) => handleSocialChange(index, "url", e.target.value)}
+                          placeholder="https://..."
+                          className="w-full rounded-md border border-slate-300 bg-white px-2 py-2 text-sm"
+                        />
+
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.currentTarget.files?.[0];
+                              if (!file) return;
+                              void handleSocialImageUpload(index, file);
+                              e.currentTarget.value = "";
+                            }}
+                            className="w-full rounded-md border border-slate-300 bg-white px-2 py-2 text-sm"
+                          />
+                          {socialIconUploading[index] ? (
+                            <span className="text-xs text-slate-500">Subiendo…</span>
+                          ) : link.imageUrl ? (
+                            <button
+                              type="button"
+                              onClick={() => handleSocialChange(index, "imageUrl", "")}
+                              className="rounded-md border border-slate-300 bg-white px-2 py-2 text-xs text-slate-700 hover:bg-slate-100"
+                              title="Quitar icono"
+                            >
+                              Quitar
+                            </button>
+                          ) : null}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSocial(index)}
+                          className="rounded-md border border-slate-300 bg-white px-2 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end">
+                  <button
+                    type="submit"
+                    disabled={socialSaving}
+                    className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    {socialSaving ? "Guardando..." : "Guardar redes"}
+                  </button>
+                </div>
               </form>
             )}
           </div>
@@ -1460,6 +1615,7 @@ export default function LinkPagesScreen() {
 
               {currentPage.blocks.map((block, blockIndex) => {
                 const blockConfig = block.config || {};
+                const isExpanded = expandedBlocks[block.id] ?? true;
 
                 return (
                   <div
@@ -1476,6 +1632,26 @@ export default function LinkPagesScreen() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedBlocks((prev) => ({
+                              ...prev,
+                              [block.id]: !(prev[block.id] ?? true),
+                            }))
+                          }
+                          className="rounded border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50"
+                          title={isExpanded ? "Ocultar opciones" : "Mostrar opciones"}
+                          aria-expanded={isExpanded}
+                        >
+                          <ChevronDown
+                            className={cn(
+                              "h-4 w-4 transition-transform duration-200",
+                              isExpanded ? "rotate-180" : "rotate-0"
+                            )}
+                            aria-hidden="true"
+                          />
+                        </button>
                         <div className="flex flex-col gap-1 text-[10px] text-slate-500">
                           <button
                             type="button"
@@ -1507,6 +1683,16 @@ export default function LinkPagesScreen() {
                       </div>
                     </div>
 
+                    <div
+                      className={cn(
+                        "grid transition-all duration-200 ease-out",
+                        isExpanded
+                          ? "grid-rows-[1fr] opacity-100"
+                          : "grid-rows-[0fr] opacity-0"
+                      )}
+                    >
+                      <div className="overflow-hidden">
+                        <div className={cn("pt-3", isExpanded ? "animate-in fade-in-0 slide-in-from-top-1 duration-200" : "")}>
                     {block.blockType === "links" && (
                       <ul className="mt-2 space-y-1">
                         {block.items.length === 0 && (
@@ -1553,7 +1739,7 @@ export default function LinkPagesScreen() {
                     )}
 
                     {block.blockType === "text" && (
-                      <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                      <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700 animate-in fade-in-0 slide-in-from-top-1 duration-200">
                         <label className="flex flex-col gap-1">
                           Contenido
                           <textarea
@@ -1567,7 +1753,7 @@ export default function LinkPagesScreen() {
                             className="min-h-[80px] rounded-md border border-slate-300 px-2 py-1 text-sm"
                           />
                         </label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                           <label className="flex flex-col gap-1">
                             Alineación
                             <select
@@ -1602,6 +1788,24 @@ export default function LinkPagesScreen() {
                             </select>
                           </label>
                           <label className="flex flex-col gap-1">
+                            Fuente
+                            <select
+                              value={blockConfig.fontFamily || "system"}
+                              onChange={(e) =>
+                                updateBlockConfigLocal(block.id, (config) => ({
+                                  ...config,
+                                  fontFamily: e.target.value,
+                                }))
+                              }
+                              className="rounded-md border border-slate-300 px-2 py-1"
+                            >
+                              <option value="system">Sistema</option>
+                              <option value="sans">Sans</option>
+                              <option value="serif">Serif</option>
+                              <option value="mono">Mono</option>
+                            </select>
+                          </label>
+                          <label className="flex flex-col gap-1">
                             Tono
                             <select
                               value={blockConfig.tone || "default"}
@@ -1632,31 +1836,101 @@ export default function LinkPagesScreen() {
                     )}
 
                     {block.blockType === "image" && (
-                      <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                      <div className="mt-3 space-y-3 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700 animate-in fade-in-0 slide-in-from-top-1 duration-200">
                         <label className="flex flex-col gap-1">
-                          URL de la imagen
+                          Subir imágenes (principal)
                           <input
-                            type="text"
-                            value={blockConfig.imageUrl || ""}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => handleBlockImageUpload(e as any, block.id)}
+                            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm"
+                          />
+                        </label>
+
+                        <label className="flex flex-col gap-1">
+                          Link al hacer clic (opcional)
+                          <input
+                            type="url"
+                            value={blockConfig.linkUrl || ""}
                             onChange={(e) =>
                               updateBlockConfigLocal(block.id, (config) => ({
                                 ...config,
-                                imageUrl: e.target.value,
+                                linkUrl: e.target.value,
                               }))
                             }
                             className="rounded-md border border-slate-300 px-2 py-1 text-sm"
                             placeholder="https://..."
                           />
                         </label>
-                        <label className="flex flex-col gap-1">
-                          Subir imagen
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleBlockImageUpload(e as any, block.id)}
-                            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm"
-                          />
-                        </label>
+
+                        <details className="rounded-md border border-slate-200 bg-slate-50 p-2">
+                          <summary className="cursor-pointer select-none text-xs font-semibold text-slate-800">
+                            Añadir por URL
+                          </summary>
+                          <div className="mt-2">
+                            <textarea
+                              value={
+                                Array.isArray(blockConfig.images)
+                                  ? blockConfig.images.join("\n")
+                                  : blockConfig.imageUrl
+                                  ? String(blockConfig.imageUrl)
+                                  : ""
+                              }
+                              onChange={(e) => {
+                                const urls = e.target.value
+                                  .split("\n")
+                                  .map((line) => line.trim())
+                                  .filter(Boolean);
+                                updateBlockConfigLocal(block.id, (config) => ({
+                                  ...config,
+                                  images: urls,
+                                  imageUrl: urls[0] || "",
+                                }));
+                              }}
+                              className="min-h-[80px] w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                              placeholder={"https://...\nhttps://..."}
+                            />
+                          </div>
+                        </details>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="flex flex-col gap-1">
+                            Formato
+                            <select
+                              value={blockConfig.display || "single"}
+                              onChange={(e) =>
+                                updateBlockConfigLocal(block.id, (config) => ({
+                                  ...config,
+                                  display: e.target.value,
+                                }))
+                              }
+                              className="rounded-md border border-slate-300 px-2 py-1"
+                            >
+                              <option value="single">Una sola</option>
+                              <option value="carousel">Carrusel</option>
+                              <option value="mosaic">Mosaico</option>
+                              <option value="grid">Cuadrícula</option>
+                            </select>
+                          </label>
+                          <label className="flex flex-col gap-1">
+                            Tamaño
+                            <select
+                              value={blockConfig.size || "md"}
+                              onChange={(e) =>
+                                updateBlockConfigLocal(block.id, (config) => ({
+                                  ...config,
+                                  size: e.target.value,
+                                }))
+                              }
+                              className="rounded-md border border-slate-300 px-2 py-1"
+                            >
+                              <option value="sm">Pequeño</option>
+                              <option value="md">Medio</option>
+                              <option value="lg">Grande</option>
+                            </select>
+                          </label>
+                        </div>
                         <label className="flex flex-col gap-1">
                           Texto alternativo
                           <input
@@ -1720,7 +1994,7 @@ export default function LinkPagesScreen() {
                     )}
 
                     {block.blockType === "social" && (
-                      <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                      <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700 animate-in fade-in-0 slide-in-from-top-1 duration-200">
                         <label className="flex flex-col gap-1">
                           Estilo
                           <select
@@ -1753,7 +2027,7 @@ export default function LinkPagesScreen() {
                     )}
 
                     {block.blockType === "separator" && (
-                      <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                      <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700 animate-in fade-in-0 slide-in-from-top-1 duration-200">
                         <label className="flex flex-col gap-1">
                           Variante
                           <select
@@ -1770,6 +2044,44 @@ export default function LinkPagesScreen() {
                             <option value="space">Espacio</option>
                           </select>
                         </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="flex flex-col gap-1">
+                            Grosor (px)
+                            <input
+                              type="number"
+                              min={1}
+                              max={12}
+                              value={Number(blockConfig.thickness ?? 1)}
+                              onChange={(e) =>
+                                updateBlockConfigLocal(block.id, (config) => ({
+                                  ...config,
+                                  thickness: Number(e.target.value || 1),
+                                }))
+                              }
+                              disabled={(blockConfig.variant || "line") === "space"}
+                              className="rounded-md border border-slate-300 px-2 py-1"
+                            />
+                          </label>
+                          <label className="flex flex-col gap-1">
+                            Tipo de línea
+                            <select
+                              value={blockConfig.lineStyle || "solid"}
+                              onChange={(e) =>
+                                updateBlockConfigLocal(block.id, (config) => ({
+                                  ...config,
+                                  lineStyle: e.target.value,
+                                }))
+                              }
+                              disabled={(blockConfig.variant || "line") === "space"}
+                              className="rounded-md border border-slate-300 px-2 py-1"
+                            >
+                              <option value="solid">Sólida</option>
+                              <option value="dashed">Discontinua</option>
+                              <option value="dotted">Punteada</option>
+                              <option value="double">Doble</option>
+                            </select>
+                          </label>
+                        </div>
                         <label className="flex flex-col gap-1">
                           Etiqueta (opcional)
                           <input
@@ -1916,80 +2228,13 @@ export default function LinkPagesScreen() {
                         </button>
                       </form>
                     )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
             </div>
-          )}
-        </div>
-
-        {/* Panel de redes sociales: permite gestionar las redes directamente desde la sección de páginas */}
-        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm space-y-3">
-          <h2 className="text-sm font-semibold text-slate-900">Redes sociales</h2>
-          {socialLoading ? (
-            <p className="text-sm text-slate-500">Cargando redes…</p>
-          ) : (
-            <form onSubmit={handleSaveSocial} className="space-y-3">
-              {socialError && (
-                <div className="text-sm text-red-600">{socialError}</div>
-              )}
-              {socialMessage && (
-                <div className="text-sm text-emerald-600">{socialMessage}</div>
-              )}
-              {socialLinks.length === 0 && (
-                <p className="text-sm text-slate-500">Aún no tienes redes añadidas.</p>
-              )}
-              <div className="space-y-3">
-                {socialLinks.map((link, index) => (
-                  <div
-                    key={index}
-                    className="grid gap-2 md:grid-cols-[1fr,2fr,auto]"
-                  >
-                    <select
-                      value={link.type}
-                      onChange={(e) => handleSocialChange(index, "type", e.target.value)}
-                      className="w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
-                    >
-                      {SOCIAL_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="url"
-                      value={link.url}
-                      onChange={(e) => handleSocialChange(index, "url", e.target.value)}
-                      placeholder="https://..."
-                      className="w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSocial(index)}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={handleAddSocial}
-                  className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
-                >
-                  + Añadir red
-                </button>
-                <button
-                  type="submit"
-                  disabled={socialSaving}
-                  className="rounded-md bg-slate-900 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-50"
-                >
-                  {socialSaving ? "Guardando..." : "Guardar redes"}
-                </button>
-              </div>
-            </form>
           )}
         </div>
 
