@@ -347,8 +347,6 @@ function renderTextBlock(
 
 function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | null) {
   const config = block.config || {};
-  const defaultLinkUrl =
-    typeof (config as any).linkUrl === "string" ? String((config as any).linkUrl).trim() : "";
   const style = (config.style || {}) as BlockStyleConfig;
   const { className, style: inlineStyle } = buildBlockStyle(style);
   const shapeClass =
@@ -404,7 +402,7 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
     linkUrl?: string | null;
   }) => {
     const { key, className: tileClassName, style: tileStyle, url } = params;
-    const linkUrl = (params.linkUrl || defaultLinkUrl || "").trim();
+    const linkUrl = (params.linkUrl || "").trim();
     const content = (
       <Image
         src={url}

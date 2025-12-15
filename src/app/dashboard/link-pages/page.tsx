@@ -89,7 +89,6 @@ const defaultBlockConfigs: Record<string, any> = {
   image: {
     imageUrl: "",
     images: [],
-    linkUrl: "",
     alt: "",
     display: "grid",
     size: "md",
@@ -2234,33 +2233,12 @@ export default function LinkPagesScreen() {
                             )}
                           </div>
 
-                          <div className="grid gap-3 md:grid-cols-2">
-                            <CollapsiblePanel
-                              title="Link por defecto (opcional)"
-                              description="Se usa cuando una imagen no tenga link propio."
-                              className="bg-slate-50 shadow-none"
-                              headerClassName="px-3 py-2"
-                              contentClassName="px-3 pb-3"
-                            >
-                              <input
-                                type="url"
-                                value={blockConfig.linkUrl || ""}
-                                onChange={(e) =>
-                                  updateBlockConfigLocal(block.id, (config) => ({
-                                    ...config,
-                                    linkUrl: e.target.value,
-                                  }))
-                                }
-                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                                placeholder="https://..."
-                              />
-                            </CollapsiblePanel>
-
+                          <div className="grid gap-3">
                             <CollapsiblePanel
                               title="Link de la imagen seleccionada"
                               description={
                                 selectedItem
-                                  ? `Imagen ${selectedIndex + 1} ${selectedIndex === 0 ? "(portada)" : ""}`
+                                  ? `Imagen ${selectedIndex + 1} ${selectedIndex === 0 ? "(portada)" : ""} · Si lo dejas vacío, no redirecciona.`
                                   : "Selecciona una miniatura para editar su link."
                               }
                               className="bg-slate-50 shadow-none"
@@ -2393,11 +2371,11 @@ export default function LinkPagesScreen() {
                           <div className="grid gap-3 md:grid-cols-2">
                             <div className="space-y-1">
                               <p className="text-xs font-semibold text-slate-700">Bordes</p>
-                              <div className="grid grid-cols-3 gap-2">
+                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                 {[
-                                  { value: "rounded", label: "Rounded" },
-                                  { value: "pill", label: "Pill" },
-                                  { value: "square", label: "Square" },
+                                  { value: "rounded", label: "Redondo" },
+                                  { value: "pill", label: "Píldora" },
+                                  { value: "square", label: "Cuadrado" },
                                 ].map((opt) => (
                                   <button
                                     key={opt.value}
@@ -2409,7 +2387,7 @@ export default function LinkPagesScreen() {
                                       }))
                                     }
                                     className={cn(
-                                      "rounded-xl border px-3 py-2 text-sm font-semibold shadow-sm transition",
+                                      "rounded-xl border px-3 py-2 text-xs font-semibold shadow-sm transition",
                                       shape === opt.value
                                         ? "border-indigo-700 bg-indigo-600 text-white"
                                         : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
