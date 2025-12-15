@@ -38,23 +38,25 @@ export function CollapsiblePanel(props: {
   return (
     <div
       className={cn(
-        "rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5",
+        "rounded-2xl border border-border bg-card shadow-sm shadow-black/5",
         className
       )}
     >
       <button
         type="button"
         className={cn(
-          "flex w-full items-start justify-between gap-3 rounded-xl px-4 py-3 text-left transition-colors duration-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 active:bg-slate-100/60",
+          "flex w-full items-start justify-between gap-3 rounded-2xl px-4 py-3 text-left transition-colors duration-200 hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 active:bg-accent",
           headerClassName
         )}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-slate-900">{title}</div>
+          <div className="text-sm font-semibold text-foreground">{title}</div>
           {description ? (
-            <div className="mt-0.5 text-xs text-slate-600">{description}</div>
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              {description}
+            </div>
           ) : null}
         </div>
 
@@ -62,7 +64,7 @@ export function CollapsiblePanel(props: {
           {right}
           <ChevronDown
             className={cn(
-              "h-4 w-4 text-slate-500 transition-transform duration-300 ease-out",
+              "h-4 w-4 text-muted-foreground transition-transform duration-300 ease-out",
               open ? "rotate-180" : "rotate-0"
             )}
             aria-hidden="true"

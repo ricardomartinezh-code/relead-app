@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { CollapsiblePanel } from "@/components/ui/collapsible-panel";
+import { applyDashboardTheme, storeDashboardTheme } from "@/lib/dashboardTheme";
 
 /**
  * Este componente implementa la página de ajustes del perfil.  A diferencia
@@ -26,7 +27,7 @@ interface SettingsForm {
 const THEME_OPTIONS = [
   { value: "light", label: "Claro" },
   { value: "dark", label: "Obscuro" },
-  { value: "custom", label: "Personalizado" },
+  { value: "custom", label: "Teñido" },
 ];
 
 // Colores predeterminados para el modo personalizado.  Se pueden extender o
@@ -66,12 +67,17 @@ export default function SettingsPage() {
         }
         const data = await res.json();
         const settings = data.settings || {};
-        setForm({
+        const nextForm = {
           username: data.username || "",
           avatarUrl: data.avatarUrl || null,
           settings: settings,
           themeMode: settings.themeMode || "light",
           customColor: settings.customColor || PRESET_COLORS[0].value,
+        };
+        setForm(nextForm);
+        applyDashboardTheme({
+          themeMode: nextForm.themeMode,
+          customColor: nextForm.customColor,
         });
       } catch (err: any) {
         setError(err.message || "Error al cargar perfil");
@@ -84,7 +90,20 @@ export default function SettingsPage() {
 
   // Handlers para modificar los campos del formulario
   const handleChange = (field: keyof SettingsForm, value: any) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "themeMode" || field === "customColor") {
+        applyDashboardTheme({
+          themeMode: next.themeMode,
+          customColor: next.customColor,
+        });
+        storeDashboardTheme({
+          themeMode: next.themeMode,
+          customColor: next.customColor,
+        });
+      }
+      return next;
+    });
   };
 
   const uploadAvatarFile = async (file: File) => {
@@ -153,6 +172,10 @@ export default function SettingsPage() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "No se pudo guardar el perfil");
       }
+      storeDashboardTheme({
+        themeMode: form.themeMode,
+        customColor: form.customColor,
+      });
       setMessage("Ajustes guardados correctamente");
     } catch (err: any) {
       setError(err.message || "Error guardando ajustes");
@@ -199,7 +222,7 @@ export default function SettingsPage() {
         ) : (
           <form
             onSubmit={handleSubmit}
-            className="space-y-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+            className="space-y-6 rounded-2xl border border-border bg-card p-4 shadow-sm shadow-black/5"
           >
             {error && (
               <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

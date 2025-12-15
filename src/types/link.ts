@@ -13,7 +13,14 @@ export interface LinkPageBackground {
 export interface LinkPageTypography {
   headingSize?: "sm" | "md" | "lg";
   bodySize?: "sm" | "md" | "lg";
-  fontFamily?: "system" | "sans" | "serif" | "mono";
+  fontFamily?:
+    | "system"
+    | "sans"
+    | "serif"
+    | "mono"
+    | "poppins"
+    | "dm_sans"
+    | "space_grotesk";
 }
 
 export interface LinkPageDesign {

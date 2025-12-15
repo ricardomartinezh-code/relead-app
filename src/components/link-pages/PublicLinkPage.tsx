@@ -36,7 +36,7 @@ interface PublicLinkPageProps {
         profile?: PublicLinkPage["profile"] | null;
       })
     | null;
-  variant?: "full" | "preview";
+  variant?: "full" | "preview" | "embed";
 }
 
 interface RenderOptions {
@@ -232,7 +232,7 @@ function renderLinks(
       {block.title && (
         <p className="text-sm font-semibold text-slate-100">{block.title}</p>
       )}
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         {block.items.map((item: LinkItem) => (
           <a
             key={item.id}
@@ -245,14 +245,14 @@ function renderLinks(
               void trackLinkItemClick(item.id);
               window.open(item.url, "_blank", "noopener,noreferrer");
             }}
-            className="flex w-full items-center justify-between rounded-lg bg-white/5 px-4 py-3 text-sm font-medium text-slate-50 transition hover:translate-y-[1px] hover:bg-white/10"
+            className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-50 shadow-sm shadow-black/20 backdrop-blur transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
             style={{
               backgroundColor: design?.buttonBg,
               color: design?.buttonText,
             }}
           >
-            <span className="truncate">{item.label}</span>
-            <span className="ml-2 inline-flex items-center">
+            <span className="min-w-0 truncate">{item.label}</span>
+            <span className="inline-flex shrink-0 items-center gap-2">
               {item.imageUrl ? (
                 <Image
                   src={item.imageUrl}
@@ -266,6 +266,9 @@ function renderLinks(
               ) : item.icon ? (
                 <span className="text-base">{item.icon}</span>
               ) : null}
+              <span className="translate-x-0 text-white/60 transition group-hover:translate-x-0.5 group-hover:text-white/85">
+                →
+              </span>
             </span>
           </a>
         ))}
@@ -303,6 +306,12 @@ function renderTextBlock(
       ? "font-serif"
       : config.fontFamily === "mono"
       ? "font-mono"
+      : config.fontFamily === "poppins"
+      ? "font-poppins"
+      : config.fontFamily === "dm_sans"
+      ? "font-dm-sans"
+      : config.fontFamily === "space_grotesk"
+      ? "font-space-grotesk"
       : "";
 
   const mergedStyle: CSSProperties = { ...inlineStyle };
@@ -442,7 +451,7 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
           <span className="text-xs text-slate-200">Añade una imagen</span>
         </div>
       ) : display === "carousel" && items.length > 1 ? (
-        <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2">
+        <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2">
           {items.map((item, idx) =>
             wrapImageTile({
               key: `${block.id}-img-${idx}`,
@@ -483,7 +492,7 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
             url: items[0].url,
             linkUrl: items[0].linkUrl ?? null,
           })}
-          <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1">
+          <div className="no-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1">
             {items.slice(1).map((item, idx) =>
               wrapImageTile({
                 key: `${block.id}-img-strip-${idx}`,
@@ -632,7 +641,7 @@ function renderSeparatorBlock(
 
 export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPageProps) {
   if (!page) {
-    if (variant === "preview") {
+    if (variant === "preview" || variant === "embed") {
       return (
         <div className="flex h-96 w-52 items-center justify-center rounded-[2rem] border border-slate-700 bg-slate-900 text-xs text-slate-500">
           Sin página seleccionada
@@ -666,6 +675,12 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
       ? "font-serif"
       : typography.fontFamily === "mono"
       ? "font-mono"
+      : typography.fontFamily === "poppins"
+      ? "font-poppins"
+      : typography.fontFamily === "dm_sans"
+      ? "font-dm-sans"
+      : typography.fontFamily === "space_grotesk"
+      ? "font-space-grotesk"
       : "";
 
   const renderOptions: RenderOptions = {
@@ -696,29 +711,31 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
             alt={title || "Avatar"}
             width={96}
             height={96}
-            className="h-24 w-24 rounded-full border-2 border-white/20 object-cover"
+            className="h-24 w-24 rounded-full border border-white/25 object-cover shadow-lg shadow-black/20"
           />
         ) : (
-          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white/10 text-xl font-semibold text-white">
+          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white/10 text-xl font-semibold text-white shadow-lg shadow-black/20">
             {getAvatarInitials(title) || "☆"}
           </div>
         )
       )}
       <div className="space-y-1">
         {headerDesign.useProfileName !== false && (
-          <p className={`font-semibold text-white ${headingSizeClass}`}>{title}</p>
+          <p className={`font-semibold tracking-tight text-white ${headingSizeClass}`}>
+            {title}
+          </p>
         )}
         {headerDesign.useProfileBio !== false && description && (
-          <p className={`text-slate-200 ${bodySizeClass}`}>{description}</p>
+          <p className={`text-white/80 ${bodySizeClass}`}>{description}</p>
         )}
         {profile?.username && (
-          <p className={`text-xs font-medium text-slate-300 ${bodySizeClass}`}>
+          <p className={`text-xs font-medium text-white/65 ${bodySizeClass}`}>
             @{profile.username}
           </p>
         )}
       </div>
       {showSocialLinks && socialLinks && socialLinks.length > 0 && (
-        <div className="flex flex-wrap items-center justify-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           {socialLinks
             .filter((link: any) => Boolean(link?.url))
             .slice(0, 5)
@@ -728,7 +745,7 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
                 href={link.url}
                 target="_blank"
                 rel="noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-sm shadow-black/25 backdrop-blur transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
                 title={link.type}
                 aria-label={link.type}
               >
@@ -784,19 +801,43 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
     </div>
   );
 
+  const shell = (params: { compact?: boolean }) => (
+    <div
+      className={["relative z-10 mx-auto flex w-full max-w-xl flex-col gap-6", params.compact ? "px-3 py-4" : "px-4 py-10"].join(" ")}
+    >
+      <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-xl shadow-black/25 backdrop-blur">
+        {header}
+      </div>
+      <div className={["rounded-3xl border border-white/10 bg-white/5 p-4 shadow-xl shadow-black/25 backdrop-blur", bodySizeClass].join(" ")}>
+        {content}
+      </div>
+      <p className="text-center text-xs text-white/45">Hecho con ReLead</p>
+    </div>
+  );
+
   if (variant === "preview") {
     return (
       <div
-        className={`relative flex h-96 w-52 flex-col overflow-hidden rounded-[2.2rem] border border-slate-700 px-3 py-4 ${fontFamilyClass}`}
+        className={`relative flex h-96 w-52 flex-col overflow-hidden rounded-[2.2rem] border border-white/15 bg-black/20 ${fontFamilyClass}`}
         style={backgroundStyle}
       >
         {backgroundLayers}
-        <div className="relative z-10 flex-1 space-y-4 overflow-hidden" style={{ color: design?.textColor }}>
-          {header}
-          <div className="h-[1px] w-full bg-white/5" />
-          <div className={`scrollbar-thin max-h-36 space-y-3 overflow-y-auto pr-1 ${bodySizeClass}`}>
-            {content}
-          </div>
+        <div className="no-scrollbar relative z-10 flex-1 overflow-y-auto" style={{ color: design?.textColor }}>
+          {shell({ compact: true })}
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "embed") {
+    return (
+      <div
+        className={`relative h-full w-full overflow-hidden rounded-3xl border border-white/10 ${fontFamilyClass}`}
+        style={{ ...backgroundStyle, color: design?.textColor }}
+      >
+        {backgroundLayers}
+        <div className="no-scrollbar relative z-10 h-full w-full overflow-y-auto">
+          {shell({ compact: true })}
         </div>
       </div>
     );
@@ -808,13 +849,7 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
       style={{ ...backgroundStyle, color: design?.textColor }}
     >
       {backgroundLayers}
-      <div className="relative z-10 mx-auto flex w-full max-w-lg flex-col gap-6 px-4 py-10">
-        {header}
-        <div className={`space-y-4 rounded-2xl bg-white/5 p-4 shadow-lg shadow-black/30 ${bodySizeClass}`}>
-          {content}
-        </div>
-        <p className="text-center text-xs text-slate-400">Hecho con ReLead</p>
-      </div>
+      {shell({ compact: false })}
     </main>
   );
 }

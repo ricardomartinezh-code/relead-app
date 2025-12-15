@@ -131,7 +131,7 @@ export function DashboardChatWidget() {
       {open && (
         <div
           className={cn(
-            "w-[min(440px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl",
+            "w-[min(440px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-popover shadow-2xl shadow-black/15",
             "animate-in fade-in-0 zoom-in-95 duration-200"
           )}
         >
@@ -181,8 +181,8 @@ export function DashboardChatWidget() {
                     className={cn(
                       "max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed",
                       m.role === "user"
-                        ? "bg-slate-900 text-white"
-                        : "bg-slate-100 text-slate-900"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-foreground"
                     )}
                   >
                     {m.content}
@@ -197,7 +197,7 @@ export function DashboardChatWidget() {
                       key={s}
                       type="button"
                       onClick={() => void sendMessage(s)}
-                      className="group rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:shadow"
+                      className="group rounded-xl border border-border bg-card px-3 py-2 text-left text-sm text-foreground/80 shadow-sm shadow-black/5 transition hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground hover:shadow"
                     >
                       <div className="flex items-start gap-2">
                         <Sparkles
@@ -220,7 +220,7 @@ export function DashboardChatWidget() {
           </div>
 
           <form
-            className="border-t border-slate-200 bg-white px-3 py-3"
+            className="border-t border-border bg-popover px-3 py-3"
             onSubmit={(e) => {
               e.preventDefault();
               void sendMessage(input);
@@ -232,14 +232,14 @@ export function DashboardChatWidget() {
                 onChange={(e) => setInput(e.target.value)}
                 rows={1}
                 placeholder="Escribe tu pregunta…"
-                className="max-h-32 min-h-[44px] flex-1 resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                className="max-h-32 min-h-[44px] flex-1 resize-none rounded-2xl border border-input bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-ring/20"
               />
               <Button type="submit" disabled={sending || !input.trim()}>
                 <CornerDownLeft className="h-4 w-4" />
                 {sending ? "Enviando" : "Enviar"}
               </Button>
             </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+            <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
               <button
                 type="button"
                 onClick={() => {
@@ -252,7 +252,7 @@ export function DashboardChatWidget() {
                   ]);
                   setError(null);
                 }}
-                className="rounded-md px-2 py-1 hover:bg-slate-100"
+                className="rounded-md px-2 py-1 hover:bg-accent"
               >
                 Reiniciar chat
               </button>

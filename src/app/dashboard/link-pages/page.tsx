@@ -164,7 +164,7 @@ function DesignControls({
           <select
             value={background.type || "solid"}
             onChange={(e) => updateBackground({ type: e.target.value as any })}
-            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+            className="rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-ring/20"
           >
             <option value="solid">Sólido</option>
             <option value="gradient">Degradado</option>
@@ -309,7 +309,7 @@ function DesignControls({
               },
             })
           }
-          className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+          className="rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-ring/20"
         >
           <option value="classic">Clásico</option>
           <option value="minimal">Minimal</option>
@@ -374,7 +374,7 @@ function DesignControls({
           <select
             value={typography.headingSize || "md"}
             onChange={(e) => updateTypography({ headingSize: e.target.value as any })}
-            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+            className="rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-ring/20"
           >
             <option value="sm">Pequeño</option>
             <option value="md">Medio</option>
@@ -386,7 +386,7 @@ function DesignControls({
           <select
             value={typography.bodySize || "sm"}
             onChange={(e) => updateTypography({ bodySize: e.target.value as any })}
-            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+            className="rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-ring/20"
           >
             <option value="sm">Pequeño</option>
             <option value="md">Medio</option>
@@ -398,10 +398,13 @@ function DesignControls({
           <select
             value={typography.fontFamily || "system"}
             onChange={(e) => updateTypography({ fontFamily: e.target.value as any })}
-            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+            className="rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-ring/20"
           >
             <option value="system">Sistema</option>
             <option value="sans">Sans</option>
+            <option value="dm_sans">DM Sans</option>
+            <option value="poppins">Poppins</option>
+            <option value="space_grotesk">Space Grotesk</option>
             <option value="serif">Serif</option>
             <option value="mono">Mono</option>
           </select>
@@ -458,6 +461,7 @@ export default function LinkPagesScreen() {
   const [socialError, setSocialError] = useState<string | null>(null);
   const [socialMessage, setSocialMessage] = useState<string | null>(null);
   const [socialIconUploading, setSocialIconUploading] = useState<Record<number, boolean>>({});
+  const [previewDevice, setPreviewDevice] = useState<"mobile" | "desktop">("mobile");
   const SOCIAL_OPTIONS = [
     "instagram",
     "tiktok",
@@ -1352,16 +1356,16 @@ export default function LinkPagesScreen() {
       <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
       <header className="flex items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">
+          <h1 className="text-xl font-semibold text-foreground">
             Páginas
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Crea y edita tus páginas tipo link-in-bio.
           </p>
         </div>
       </header>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm shadow-black/5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             {/* Cambiamos el título para reflejar la lista de páginas existentes */}
@@ -1613,7 +1617,7 @@ export default function LinkPagesScreen() {
                     onChange={(e) =>
                       setBlockForm((prev) => ({ ...prev, blockType: e.target.value }))
                     }
-                    className="w-32 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                    className="w-40 rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-ring/20"
                   >
                     <option value="text">Texto</option>
                     <option value="image">Imagen</option>
@@ -1718,6 +1722,7 @@ export default function LinkPagesScreen() {
                               )}
                             </div>
                             <input
+                              id={`social-icon-${index}`}
                               type="file"
                               accept="image/*"
                               onChange={(e) => {
@@ -1726,8 +1731,25 @@ export default function LinkPagesScreen() {
                                 void handleSocialImageUpload(index, file);
                                 e.currentTarget.value = "";
                               }}
-                              className="w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                              className="hidden"
                             />
+                            <Button
+                              asChild
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              disabled={Boolean(socialIconUploading[index])}
+                              className="shrink-0"
+                            >
+                              <label
+                                htmlFor={`social-icon-${index}`}
+                                title="Subir ícono"
+                                aria-label="Subir ícono"
+                                className="cursor-pointer"
+                              >
+                                <UploadCloud className="h-4 w-4" />
+                              </label>
+                            </Button>
                             {socialIconUploading[index] ? (
                               <span className="text-xs text-slate-500">Subiendo…</span>
                             ) : link.imageUrl ? (
@@ -1951,7 +1973,7 @@ export default function LinkPagesScreen() {
                                   align: e.target.value,
                                 }))
                               }
-                              className="rounded-md border border-slate-300 px-2 py-1"
+                              className="rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-ring/20"
                             >
                               <option value="left">Izquierda</option>
                               <option value="center">Centro</option>
@@ -1967,7 +1989,7 @@ export default function LinkPagesScreen() {
                                   size: e.target.value,
                                 }))
                               }
-                              className="rounded-md border border-slate-300 px-2 py-1"
+                              className="rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-ring/20"
                             >
                               <option value="sm">Pequeño</option>
                               <option value="md">Medio</option>
@@ -1984,10 +2006,13 @@ export default function LinkPagesScreen() {
                                   fontFamily: e.target.value,
                                 }))
                               }
-                              className="rounded-md border border-slate-300 px-2 py-1"
+                              className="rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-ring/20"
                             >
                               <option value="system">Sistema</option>
                               <option value="sans">Sans</option>
+                              <option value="dm_sans">DM Sans</option>
+                              <option value="poppins">Poppins</option>
+                              <option value="space_grotesk">Space Grotesk</option>
                               <option value="serif">Serif</option>
                               <option value="mono">Mono</option>
                             </select>
@@ -2002,7 +2027,7 @@ export default function LinkPagesScreen() {
                                   tone: e.target.value,
                                 }))
                               }
-                              className="rounded-md border border-slate-300 px-2 py-1"
+                              className="rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-ring/20"
                             >
                               <option value="default">Predeterminado</option>
                               <option value="muted">Suave</option>
@@ -2603,7 +2628,7 @@ export default function LinkPagesScreen() {
                                 },
                               }))
                             }
-                            className="w-32 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                            className="w-40 rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-ring/20"
                           >
                             <option value="">Ninguno</option>
                             <option value="instagram">Instagram</option>
@@ -2648,12 +2673,28 @@ export default function LinkPagesScreen() {
                         )}
                         {/* Campo de carga solo cuando el usuario selecciona un icono personalizado */}
                         {linkDrafts[block.id]?.iconType === "custom" && (
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleIconUpload(e as any, block.id)}
-                            className="w-56 cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-slate-800"
-                          />
+                          <div className="flex items-center gap-2">
+                            <input
+                              id={`link-icon-${block.id}`}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleIconUpload(e as any, block.id)}
+                              className="hidden"
+                            />
+                            <Button asChild type="button" variant="outline" size="icon">
+                              <label
+                                htmlFor={`link-icon-${block.id}`}
+                                title="Subir ícono"
+                                aria-label="Subir ícono"
+                                className="cursor-pointer"
+                              >
+                                <UploadCloud className="h-4 w-4" />
+                              </label>
+                            </Button>
+                            <span className="text-xs text-slate-500">
+                              Subir PNG/JPG
+                            </span>
+                          </div>
                         )}
                         <button
                           type="submit"
@@ -2675,10 +2716,47 @@ export default function LinkPagesScreen() {
         </div>
 
         {/* Vista previa de la página */}
-        <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-950 p-3 text-slate-50 shadow-sm">
-          <h2 className="text-sm font-semibold">Vista previa</h2>
+        <div className="space-y-3 rounded-2xl border border-border bg-slate-950 p-3 text-slate-50 shadow-sm shadow-black/20">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">Vista previa</h2>
+            <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 p-1">
+              <button
+                type="button"
+                onClick={() => setPreviewDevice("mobile")}
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-semibold transition",
+                  previewDevice === "mobile"
+                    ? "bg-white/15 text-white"
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                )}
+              >
+                Móvil
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewDevice("desktop")}
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-semibold transition",
+                  previewDevice === "desktop"
+                    ? "bg-white/15 text-white"
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                )}
+              >
+                Escritorio
+              </button>
+            </div>
+          </div>
+
           <div className="flex justify-center">
-            <PublicLinkPage page={pageForPreview} variant="preview" />
+            {previewDevice === "mobile" ? (
+              <div className="h-[720px] w-[min(390px,100%)]">
+                <PublicLinkPage page={pageForPreview} variant="embed" />
+              </div>
+            ) : (
+              <div className="h-[720px] w-full">
+                <PublicLinkPage page={pageForPreview} variant="embed" />
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { DM_Sans, Inter, JetBrains_Mono, Poppins, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
 // Importamos el pie de página que contendrá enlaces legales y versión
@@ -10,6 +10,21 @@ const inter = Inter({ variable: "--font-sans", subsets: ["latin"] });
 const jetBrainsMono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
+});
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const siteUrl = "https://relead.com.mx";
@@ -61,7 +76,7 @@ export default function RootLayout({
       {/* Prefijo ogp.me para Open Graph */}
       <html lang="es" prefix="og: http://ogp.me/ns#">
         <body
-          className={`${inter.variable} ${jetBrainsMono.variable} font-sans antialiased`}
+          className={`${inter.variable} ${jetBrainsMono.variable} ${poppins.variable} ${dmSans.variable} ${spaceGrotesk.variable} font-sans antialiased`}
         >
           {children}
           {/* Añadimos el pie de página al final del documento */}
