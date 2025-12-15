@@ -451,6 +451,9 @@ export default function LinkPagesScreen() {
   >({});
   const [linkCreating, setLinkCreating] = useState<Record<string, boolean>>({});
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
+  const autosaveTimersRef = useRef<Record<string, number | null>>({});
+  const autosaveLatestConfigRef = useRef<Record<string, any>>({});
+  const [autosaveStatus, setAutosaveStatus] = useState<Record<string, "idle" | "saving" | "saved" | "error">>({});
 
   // Estado para la gestión de enlaces sociales. Permite cargar, editar,
   // añadir y eliminar redes sociales del perfil desde la sección de páginas.
@@ -835,24 +838,61 @@ export default function LinkPagesScreen() {
         ...prev,
         blocks: prev.blocks.map((block) =>
           block.id === blockId
-            ? { ...block, config: updater(block.config || {}) }
+            ? (() => {
+                const nextConfig = updater(block.config || {});
+                autosaveLatestConfigRef.current[blockId] = nextConfig;
+                return { ...block, config: nextConfig };
+              })()
             : block
         ),
       };
     });
+
+    setAutosaveStatus((prev) => ({ ...prev, [blockId]: "saving" }));
+    const existing = autosaveTimersRef.current[blockId];
+    if (existing) window.clearTimeout(existing);
+    autosaveTimersRef.current[blockId] = window.setTimeout(() => {
+      const latest = autosaveLatestConfigRef.current[blockId];
+      if (!latest) return;
+      void (async () => {
+        try {
+          const res = await fetch(`/api/link-blocks/${blockId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json; charset=utf-8" },
+            body: JSON.stringify({ config: latest }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || "No se pudo guardar el bloque");
+          setAutosaveStatus((prev) => ({ ...prev, [blockId]: "saved" }));
+          window.setTimeout(() => {
+            setAutosaveStatus((prev) => ({ ...prev, [blockId]: "idle" }));
+          }, 1200);
+        } catch (err) {
+          setAutosaveStatus((prev) => ({ ...prev, [blockId]: "error" }));
+        }
+      })();
+    }, 700);
   };
 
   const handleSaveBlockConfig = async (blockId: string, config: any) => {
     try {
-      await fetch(`/api/link-blocks/${blockId}`, {
+      setAutosaveStatus((prev) => ({ ...prev, [blockId]: "saving" }));
+      const res = await fetch(`/api/link-blocks/${blockId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json; charset=utf-8",
         },
         body: JSON.stringify({ config }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "No se pudo guardar el bloque");
+      setAutosaveStatus((prev) => ({ ...prev, [blockId]: "saved" }));
+      window.setTimeout(() => {
+        setAutosaveStatus((prev) => ({ ...prev, [blockId]: "idle" }));
+      }, 1200);
     } catch (err: any) {
       setError(err.message || "Error guardando bloque");
+      setAutosaveStatus((prev) => ({ ...prev, [blockId]: "error" }));
     }
   };
 
@@ -1413,6 +1453,11 @@ export default function LinkPagesScreen() {
                           </span>
                         )}
                       </div>
+                      {page.isDefault ? (
+                        <div className="mt-1 text-[11px] text-muted-foreground">
+                          Esta es la que se muestra en <span className="font-semibold">{profileUrl}</span>
+                        </div>
+                      ) : null}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -1820,6 +1865,7 @@ export default function LinkPagesScreen() {
               {currentPage.blocks.map((block, blockIndex) => {
                 const blockConfig = block.config || {};
                 const isExpanded = expandedBlocks[block.id] ?? true;
+                const savingState = autosaveStatus[block.id] || "idle";
 
                 return (
                   <div
@@ -1834,6 +1880,13 @@ export default function LinkPagesScreen() {
                         <p className="text-sm font-medium text-slate-900">
                           {block.title || "Bloque sin título"}
                         </p>
+                        {savingState === "saving" ? (
+                          <p className="text-xs text-muted-foreground">Guardando…</p>
+                        ) : savingState === "saved" ? (
+                          <p className="text-xs text-emerald-600">Guardado</p>
+                        ) : savingState === "error" ? (
+                          <p className="text-xs text-red-600">No se pudo guardar</p>
+                        ) : null}
                       </div>
                       <div className="flex items-center gap-2">
                         <button
