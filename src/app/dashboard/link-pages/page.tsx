@@ -2753,7 +2753,7 @@ export default function LinkPagesScreen() {
                 <PublicLinkPage page={pageForPreview} variant="embed" />
               </div>
             ) : (
-              <div className="h-[720px] w-full">
+              <div className="h-[720px] w-[min(1100px,100%)]">
                 <PublicLinkPage page={pageForPreview} variant="embed" />
               </div>
             )}

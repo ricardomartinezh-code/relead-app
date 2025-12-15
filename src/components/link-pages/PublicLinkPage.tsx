@@ -245,7 +245,7 @@ function renderLinks(
               void trackLinkItemClick(item.id);
               window.open(item.url, "_blank", "noopener,noreferrer");
             }}
-            className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-50 shadow-sm shadow-black/20 backdrop-blur transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
+            className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-50 shadow-sm shadow-black/20 backdrop-blur transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 md:py-4 md:text-base"
             style={{
               backgroundColor: design?.buttonBg,
               color: design?.buttonText,
@@ -455,7 +455,10 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
           {items.map((item, idx) =>
             wrapImageTile({
               key: `${block.id}-img-${idx}`,
-              className: [itemBaseClass, "w-64 shrink-0 snap-center bg-white/5"].join(" "),
+              className: [
+                itemBaseClass,
+                "w-[min(18rem,80vw)] shrink-0 snap-center bg-white/5 sm:w-72 md:w-80",
+              ].join(" "),
               style: itemStyle,
               url: item.url,
               linkUrl: item.linkUrl ?? null,
@@ -463,14 +466,14 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
           )}
         </div>
       ) : display === "mosaic" && items.length > 1 ? (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
           {items.map((item, idx) =>
             wrapImageTile({
               key: `${block.id}-img-${idx}`,
               className: [
                 itemBaseClass,
                 "bg-white/5",
-                idx === 0 && items.length >= 3 ? "col-span-2" : "",
+                idx === 0 && items.length >= 3 ? "col-span-2 md:col-span-3" : "",
               ]
                 .filter(Boolean)
                 .join(" "),
@@ -508,7 +511,7 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
           </div>
         </div>
       ) : items.length > 1 ? (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {items.map((item, idx) =>
             wrapImageTile({
               key: `${block.id}-img-${idx}`,
@@ -703,7 +706,7 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
   const showSocialLinks = (headerDesign as any).showSocialLinks !== false;
 
   const header = (
-    <div className={`flex flex-col items-center gap-3 text-center ${fontFamilyClass}`}>
+    <div className={`flex flex-col items-center gap-3 text-center ${fontFamilyClass} md:gap-4`}>
       {headerDesign.useProfileAvatar !== false && (
         avatarUrl ? (
           <Image
@@ -711,10 +714,10 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
             alt={title || "Avatar"}
             width={96}
             height={96}
-            className="h-24 w-24 rounded-full border border-white/25 object-cover shadow-lg shadow-black/20"
+            className="h-24 w-24 rounded-full border border-white/25 object-cover shadow-lg shadow-black/20 md:h-28 md:w-28"
           />
         ) : (
-          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white/10 text-xl font-semibold text-white shadow-lg shadow-black/20">
+          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white/10 text-xl font-semibold text-white shadow-lg shadow-black/20 md:h-28 md:w-28">
             {getAvatarInitials(title) || "☆"}
           </div>
         )
@@ -735,7 +738,7 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
         )}
       </div>
       {showSocialLinks && socialLinks && socialLinks.length > 0 && (
-        <div className="flex flex-wrap items-center justify-center gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
           {socialLinks
             .filter((link: any) => Boolean(link?.url))
             .slice(0, 5)
@@ -745,7 +748,7 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
                 href={link.url}
                 target="_blank"
                 rel="noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-sm shadow-black/25 backdrop-blur transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-sm shadow-black/25 backdrop-blur transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 md:h-11 md:w-11"
                 title={link.type}
                 aria-label={link.type}
               >
@@ -803,7 +806,10 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
 
   const shell = (params: { compact?: boolean }) => (
     <div
-      className={["relative z-10 mx-auto flex w-full max-w-xl flex-col gap-6", params.compact ? "px-3 py-4" : "px-4 py-10"].join(" ")}
+      className={[
+        "relative z-10 mx-auto flex w-full max-w-[560px] flex-col gap-6 sm:max-w-[640px] lg:max-w-[880px]",
+        params.compact ? "px-3 py-4" : "px-4 py-10",
+      ].join(" ")}
     >
       <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-xl shadow-black/25 backdrop-blur">
         {header}
