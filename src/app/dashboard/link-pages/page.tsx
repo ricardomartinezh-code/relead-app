@@ -1662,79 +1662,95 @@ export default function LinkPagesScreen() {
                     {socialLinks.map((link, index) => (
                       <div
                         key={`${link.type}-${index}`}
-                        className="grid gap-2 md:grid-cols-[180px,1fr,200px,auto]"
+                        className="grid grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm md:grid-cols-12 md:items-center"
                       >
-                        <select
-                          value={link.type}
-                          onChange={(e) => handleSocialChange(index, "type", e.target.value)}
-                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                        >
-                          {SOCIAL_OPTIONS.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
-
-                        <div className="flex items-center gap-2 rounded-lg border-2 border-indigo-200 bg-white px-3 py-2 shadow-sm focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200">
-                          <Link2 className="h-4 w-4 text-indigo-600" aria-hidden="true" />
-                          <input
-                            type="url"
-                            value={link.url}
-                            onChange={(e) => handleSocialChange(index, "url", e.target.value)}
-                            placeholder="Pega aquí el link a tu perfil (ej. https://instagram.com/usuario)"
-                            className="w-full bg-transparent text-base text-slate-900 placeholder:text-slate-400 focus:outline-none"
-                          />
+                        <div className="md:col-span-3">
+                          <label className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            Red
+                          </label>
+                          <select
+                            value={link.type}
+                            onChange={(e) => handleSocialChange(index, "type", e.target.value)}
+                            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                          >
+                            {SOCIAL_OPTIONS.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-                            {link.imageUrl ? (
-                              <Image
-                                src={link.imageUrl}
-                                alt={`${link.type} icon`}
-                                width={40}
-                                height={40}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-[10px] font-semibold text-slate-400">
-                                ICON
-                              </span>
-                            )}
+                        <div className="md:col-span-6">
+                          <label className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            Link del perfil
+                          </label>
+                          <div className="mt-1 flex items-center gap-2 rounded-lg border-2 border-indigo-200 bg-white px-3 py-2 shadow-sm focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200">
+                            <Link2 className="h-4 w-4 text-indigo-600" aria-hidden="true" />
+                            <input
+                              type="url"
+                              value={link.url}
+                              onChange={(e) => handleSocialChange(index, "url", e.target.value)}
+                              placeholder="https://instagram.com/tu_usuario"
+                              className="w-full bg-transparent text-base text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                            />
                           </div>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.currentTarget.files?.[0];
-                              if (!file) return;
-                              void handleSocialImageUpload(index, file);
-                              e.currentTarget.value = "";
-                            }}
-                            className="w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                          />
-                          {socialIconUploading[index] ? (
-                            <span className="text-xs text-slate-500">Subiendo…</span>
-                          ) : link.imageUrl ? (
+                        </div>
+
+                        <div className="md:col-span-3">
+                          <label className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            Ícono (opcional)
+                          </label>
+                          <div className="mt-1 flex items-center gap-2">
+                            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                              {link.imageUrl ? (
+                                <Image
+                                  src={link.imageUrl}
+                                  alt={`${link.type} icon`}
+                                  width={40}
+                                  height={40}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-[10px] font-semibold text-slate-400">
+                                  AUTO
+                                </span>
+                              )}
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.currentTarget.files?.[0];
+                                if (!file) return;
+                                void handleSocialImageUpload(index, file);
+                                e.currentTarget.value = "";
+                              }}
+                              className="w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                            />
+                            {socialIconUploading[index] ? (
+                              <span className="text-xs text-slate-500">Subiendo…</span>
+                            ) : link.imageUrl ? (
+                              <button
+                                type="button"
+                                onClick={() => handleSocialChange(index, "imageUrl", "")}
+                                className="rounded-md border border-slate-300 bg-white px-2 py-2 text-xs text-slate-700 hover:bg-slate-100"
+                                title="Quitar icono"
+                              >
+                                Quitar
+                              </button>
+                            ) : null}
+                          </div>
+                          <div className="mt-2 flex justify-end md:justify-start">
                             <button
                               type="button"
-                              onClick={() => handleSocialChange(index, "imageUrl", "")}
-                              className="rounded-md border border-slate-300 bg-white px-2 py-2 text-xs text-slate-700 hover:bg-slate-100"
-                              title="Quitar icono"
+                              onClick={() => handleRemoveSocial(index)}
+                              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm hover:bg-slate-100"
                             >
-                              Quitar
+                              Eliminar
                             </button>
-                          ) : null}
+                          </div>
                         </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveSocial(index)}
-                          className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm hover:bg-slate-100"
-                        >
-                          Eliminar
-                        </button>
                       </div>
                     ))}
                   </div>

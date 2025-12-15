@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 // Importamos el componente de Clerk para permitir cerrar la sesión
 import { SignOutButton } from "@clerk/nextjs";
 import { cn } from "@/components/lib/utils";
+import { DashboardChatWidget } from "@/components/chat/DashboardChatWidget";
 
 // Definimos la navegación principal para el dashboard. Se incluyen todas
 // las secciones disponibles como una barra horizontal en vez de un panel lateral.
@@ -82,6 +83,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {/* En el nuevo diseño no utilizamos panel lateral */}
         <div>{children}</div>
       </main>
+
+      <DashboardChatWidget />
     </div>
   );
 }

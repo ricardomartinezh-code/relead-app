@@ -342,7 +342,7 @@ export default function WhatsappTestMessagePanel() {
 
             <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
               <select
-                className="w-full min-w-[240px] max-w-[640px] rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+                className="w-full min-w-0 max-w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm sm:min-w-[240px] sm:max-w-[640px]"
                 value={selectedPhoneNumberId}
                 onChange={(e) => setSelectedPhoneNumberId(e.target.value)}
                 disabled={!accounts.length}
