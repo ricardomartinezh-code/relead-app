@@ -338,7 +338,7 @@ function renderTextBlock(
 
 function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | null) {
   const config = block.config || {};
-  const linkUrl =
+  const defaultLinkUrl =
     typeof (config as any).linkUrl === "string" ? String((config as any).linkUrl).trim() : "";
   const style = (config.style || {}) as BlockStyleConfig;
   const { className, style: inlineStyle } = buildBlockStyle(style);
@@ -356,11 +356,30 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
       : "aspect-[4/3]";
   const size = config.size || "md";
   const minHeight = size === "sm" ? 120 : size === "lg" ? 240 : 160;
-  const images: string[] = Array.isArray(config.images)
-    ? (config.images as any[]).map((u) => String(u)).filter(Boolean)
+  const display =
+    typeof (config as any).display === "string" ? String((config as any).display) : "grid";
+
+  type ImageItem = { url: string; linkUrl?: string | null };
+  const items: ImageItem[] = Array.isArray(config.images)
+    ? (config.images as any[]).flatMap((entry) => {
+        if (!entry) return [];
+        if (typeof entry === "string") return [{ url: entry, linkUrl: null }];
+        if (typeof entry === "object" && entry !== null) {
+          const url = entry.url ?? entry.imageUrl ?? entry.src;
+          if (!url) return [];
+          return [
+            {
+              url: String(url),
+              linkUrl: entry.linkUrl ? String(entry.linkUrl) : null,
+            } satisfies ImageItem,
+          ];
+        }
+        return [];
+      })
     : [];
-  if (images.length === 0 && config.imageUrl) {
-    images.push(String(config.imageUrl));
+
+  if (items.length === 0 && config.imageUrl) {
+    items.push({ url: String(config.imageUrl), linkUrl: null });
   }
 
   const itemStyle = !aspectClass ? ({ height: `${minHeight}px` } as CSSProperties) : undefined;
@@ -373,8 +392,10 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
     className: string;
     style?: CSSProperties;
     url: string;
+    linkUrl?: string | null;
   }) => {
     const { key, className: tileClassName, style: tileStyle, url } = params;
+    const linkUrl = (params.linkUrl || defaultLinkUrl || "").trim();
     const content = (
       <Image
         src={url}
@@ -416,18 +437,76 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
       className={["overflow-hidden", className].filter(Boolean).join(" ")}
       style={inlineStyle}
     >
-      {images.length === 0 ? (
+      {items.length === 0 ? (
         <div className={["flex w-full items-center justify-center bg-white/5", shapeClass].join(" ")} style={itemStyle}>
           <span className="text-xs text-slate-200">Añade una imagen</span>
         </div>
-      ) : images.length > 1 ? (
+      ) : display === "carousel" && items.length > 1 ? (
+        <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2">
+          {items.map((item, idx) =>
+            wrapImageTile({
+              key: `${block.id}-img-${idx}`,
+              className: [itemBaseClass, "w-64 shrink-0 snap-center bg-white/5"].join(" "),
+              style: itemStyle,
+              url: item.url,
+              linkUrl: item.linkUrl ?? null,
+            })
+          )}
+        </div>
+      ) : display === "mosaic" && items.length > 1 ? (
         <div className="grid grid-cols-2 gap-2">
-          {images.map((url, idx) =>
+          {items.map((item, idx) =>
+            wrapImageTile({
+              key: `${block.id}-img-${idx}`,
+              className: [
+                itemBaseClass,
+                "bg-white/5",
+                idx === 0 && items.length >= 3 ? "col-span-2" : "",
+              ]
+                .filter(Boolean)
+                .join(" "),
+              style:
+                idx === 0 && items.length >= 3 && !aspectClass
+                  ? ({ height: `${Math.round(minHeight * 1.2)}px` } as CSSProperties)
+                  : itemStyle,
+              url: item.url,
+              linkUrl: item.linkUrl ?? null,
+            })
+          )}
+        </div>
+      ) : display === "filmstrip" && items.length > 1 ? (
+        <div className="space-y-2">
+          {wrapImageTile({
+            key: `${block.id}-img-hero`,
+            className: [itemBaseClass, "bg-white/5"].join(" "),
+            style: itemStyle,
+            url: items[0].url,
+            linkUrl: items[0].linkUrl ?? null,
+          })}
+          <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1">
+            {items.slice(1).map((item, idx) =>
+              wrapImageTile({
+                key: `${block.id}-img-strip-${idx}`,
+                className: [
+                  "relative w-32 shrink-0 snap-start overflow-hidden bg-white/5",
+                  shapeClass,
+                  "aspect-square",
+                ].join(" "),
+                url: item.url,
+                linkUrl: item.linkUrl ?? null,
+              })
+            )}
+          </div>
+        </div>
+      ) : items.length > 1 ? (
+        <div className="grid grid-cols-2 gap-2">
+          {items.map((item, idx) =>
             wrapImageTile({
               key: `${block.id}-img-${idx}`,
               className: [itemBaseClass, "bg-white/5"].join(" "),
               style: itemStyle,
-              url,
+              url: item.url,
+              linkUrl: item.linkUrl ?? null,
             })
           )}
         </div>
@@ -436,7 +515,8 @@ function renderImageBlock(block: LinkBlockWithItems, _design: LinkPageDesign | n
           key: `${block.id}-img-0`,
           className: [itemBaseClass, "bg-white/5"].join(" "),
           style: itemStyle,
-          url: images[0],
+          url: items[0].url,
+          linkUrl: items[0].linkUrl ?? null,
         })
       )}
     </div>

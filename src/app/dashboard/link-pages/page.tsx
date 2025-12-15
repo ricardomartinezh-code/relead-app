@@ -16,7 +16,7 @@ import type {
 import type { ProfileRecord } from "@/lib/db";
 import PublicLinkPage from "@/components/link-pages/PublicLinkPage";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Plus, RefreshCcw, Star, Trash2, UploadCloud } from "lucide-react";
+import { ArrowUpRight, ChevronDown, Link2, Plus, RefreshCcw, Star, Trash2, UploadCloud } from "lucide-react";
 import { CollapsiblePanel } from "@/components/ui/collapsible-panel";
 
 interface ApiListPagesResponse {
@@ -91,6 +91,7 @@ const defaultBlockConfigs: Record<string, any> = {
     images: [],
     linkUrl: "",
     alt: "",
+    display: "grid",
     size: "md",
     shape: "rounded",
     aspect: "auto",
@@ -430,6 +431,7 @@ export default function LinkPagesScreen() {
   const [imageReplaceTarget, setImageReplaceTarget] = useState<{ blockId: string; index: number } | null>(null);
   const imageReplaceInputRef = useRef<HTMLInputElement | null>(null);
   const imageAddInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [selectedImageIndexByBlock, setSelectedImageIndexByBlock] = useState<Record<string, number>>({});
   // Drafts for new link items keyed by block id.  In addition to label and URL,
   // a draft can contain optional iconType (e.g. "instagram", "twitter", "custom"),
   // a specific icon key (for default icons) and an imageUrl for custom uploads.
@@ -990,16 +992,13 @@ export default function LinkPagesScreen() {
       }
 
       updateBlockConfigLocal(blockId, (config) => {
-        const existing = Array.isArray(config.images)
-          ? config.images
-          : config.imageUrl
-          ? [config.imageUrl]
-          : [];
-        const images = [...existing, ...uploadedUrls].filter(Boolean);
+        const existingItems = normalizeImageItems(config);
+        const newItems = uploadedUrls.map((url) => ({ url, linkUrl: null }));
+        const nextItems = [...existingItems, ...newItems].filter((i) => Boolean(i?.url));
         return {
           ...config,
-          images,
-          imageUrl: images[0] || "",
+          images: nextItems,
+          imageUrl: nextItems[0]?.url || "",
         };
       });
     } catch (err) {
@@ -1007,46 +1006,81 @@ export default function LinkPagesScreen() {
     }
   };
 
+  type ImageItem = { url: string; linkUrl?: string | null };
+
+  const normalizeImageItems = (config: any): ImageItem[] => {
+    const rawImages = Array.isArray(config?.images) ? (config.images as any[]) : [];
+    const itemsFromArray: ImageItem[] = rawImages
+      .map((entry) => {
+        if (!entry) return null;
+        if (typeof entry === "string") return { url: entry, linkUrl: null };
+        if (typeof entry === "object" && entry !== null) {
+          const url = entry.url ?? entry.imageUrl ?? entry.src;
+          if (!url) return null;
+          return {
+            url: String(url),
+            linkUrl: entry.linkUrl ? String(entry.linkUrl) : null,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean) as ImageItem[];
+
+    if (itemsFromArray.length > 0) return itemsFromArray;
+
+    if (config?.imageUrl) {
+      return [{ url: String(config.imageUrl), linkUrl: null }];
+    }
+    return [];
+  };
+
   const getBlockImages = (config: any): string[] => {
-    const images: string[] = Array.isArray(config?.images)
-      ? (config.images as any[]).map((u) => String(u)).filter(Boolean)
-      : [];
-    if (images.length === 0 && config?.imageUrl) images.push(String(config.imageUrl));
-    return images;
+    return normalizeImageItems(config).map((i) => i.url).filter(Boolean);
   };
 
-  const setBlockImages = (blockId: string, nextImages: string[]) => {
-    updateBlockConfigLocal(blockId, (config) => ({
-      ...config,
-      images: nextImages,
-      imageUrl: nextImages[0] || "",
-    }));
-  };
 
-  const handleRemoveBlockImage = (blockId: string, index: number) => {
+
+  const handleRemoveBlockImage = (blockId: string, index: number, currentCount: number) => {
+    const currentSelected = selectedImageIndexByBlock[blockId] ?? 0;
+    const nextCount = Math.max(0, currentCount - 1);
+    const nextSelected = Math.max(0, Math.min(Math.max(0, nextCount - 1), currentSelected));
+    setSelectedImageIndexByBlock((prev) => ({ ...prev, [blockId]: nextSelected }));
+
     updateBlockConfigLocal(blockId, (config) => {
-      const images = getBlockImages(config).filter((_, i) => i !== index);
-      return { ...config, images, imageUrl: images[0] || "" };
+      const items = normalizeImageItems(config).filter((_, i) => i !== index);
+      return { ...config, images: items, imageUrl: items[0]?.url || "" };
     });
   };
 
   const handleMakePrimaryBlockImage = (blockId: string, index: number) => {
+    setSelectedImageIndexByBlock((prev) => ({ ...prev, [blockId]: 0 }));
     updateBlockConfigLocal(blockId, (config) => {
-      const images = getBlockImages(config);
-      if (index <= 0 || index >= images.length) return config;
-      const selected = images[index];
-      const next = [selected, ...images.filter((_, i) => i !== index)];
-      return { ...config, images: next, imageUrl: next[0] || "" };
+      const items = normalizeImageItems(config);
+      if (index <= 0 || index >= items.length) return config;
+      const selected = items[index];
+      const next = [selected, ...items.filter((_, i) => i !== index)];
+      return { ...config, images: next, imageUrl: next[0]?.url || "" };
     });
   };
 
   const handleReplaceBlockImage = async (blockId: string, index: number, file: File) => {
     const url = await uploadImageFile(file);
     updateBlockConfigLocal(blockId, (config) => {
-      const images = getBlockImages(config);
-      const next = [...images];
-      next[index] = url;
-      return { ...config, images: next, imageUrl: next[0] || "" };
+      const items = normalizeImageItems(config);
+      const next = [...items];
+      const prev = next[index];
+      next[index] = { url, linkUrl: prev?.linkUrl ?? null };
+      return { ...config, images: next, imageUrl: next[0]?.url || "" };
+    });
+  };
+
+  const handleSetImageLinkUrl = (blockId: string, index: number, linkUrl: string) => {
+    updateBlockConfigLocal(blockId, (config) => {
+      const items = normalizeImageItems(config);
+      if (!items[index]) return config;
+      const next = [...items];
+      next[index] = { ...next[index], linkUrl: linkUrl.trim() || null };
+      return { ...config, images: next, imageUrl: next[0]?.url || "" };
     });
   };
 
@@ -1167,6 +1201,33 @@ export default function LinkPagesScreen() {
       );
     } catch (err: any) {
       setError(err.message || "Error reordenando links");
+      await reloadCurrentPage();
+    }
+  };
+
+  const handleDeleteLinkItem = async (blockId: string, itemId: string) => {
+    if (!currentPage) return;
+    const confirmed = window.confirm("¿Eliminar este link? Esta acción es permanente.");
+    if (!confirmed) return;
+
+    setCurrentPage((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        blocks: prev.blocks.map((b) =>
+          b.id === blockId ? { ...b, items: b.items.filter((it) => it.id !== itemId) } : b
+        ),
+      };
+    });
+
+    try {
+      const res = await fetch(`/api/link-items/${itemId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "No se pudo eliminar el link");
+      }
+    } catch (err: any) {
+      setError(err.message || "Error eliminando el link");
       await reloadCurrentPage();
     }
   };
@@ -1358,10 +1419,10 @@ export default function LinkPagesScreen() {
                         Abrir en el editor
                       </Button>
 
-                      <Button asChild variant="secondary" size="sm">
-                        {/* abrimos la misma URL pública */}
+                      <Button asChild variant="outline" size="sm" className="gap-2">
                         <Link href={publicUrl} target="_blank">
                           Ver página pública
+                          <ArrowUpRight className="h-4 w-4" />
                         </Link>
                       </Button>
 
@@ -1615,13 +1676,16 @@ export default function LinkPagesScreen() {
                           ))}
                         </select>
 
-                        <input
-                          type="url"
-                          value={link.url}
-                          onChange={(e) => handleSocialChange(index, "url", e.target.value)}
-                          placeholder="https://..."
-                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                        />
+                        <div className="flex items-center gap-2 rounded-lg border-2 border-indigo-200 bg-white px-3 py-2 shadow-sm focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200">
+                          <Link2 className="h-4 w-4 text-indigo-600" aria-hidden="true" />
+                          <input
+                            type="url"
+                            value={link.url}
+                            onChange={(e) => handleSocialChange(index, "url", e.target.value)}
+                            placeholder="Pega aquí el link a tu perfil (ej. https://instagram.com/usuario)"
+                            className="w-full bg-transparent text-base text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                          />
+                        </div>
 
                         <div className="flex items-center gap-2">
                           <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -1831,6 +1895,14 @@ export default function LinkPagesScreen() {
                               >
                                 ↓
                               </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleDeleteLinkItem(block.id, item.id)}
+                                className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100"
+                                title="Eliminar link"
+                              >
+                                ✕
+                              </button>
                             </div>
                           </li>
                         ))}
@@ -1935,7 +2007,8 @@ export default function LinkPagesScreen() {
                     )}
 
                     {block.blockType === "image" && (() => {
-                      const images = getBlockImages(blockConfig);
+                      const items = normalizeImageItems(blockConfig);
+                      const images = items.map((i) => i.url);
                       const isDropActive = imageDropActiveBlockId === block.id;
                       const shape = String(blockConfig.shape || "rounded");
                       const shapeClass =
@@ -1956,9 +2029,13 @@ export default function LinkPagesScreen() {
                       const size = String(blockConfig.size || "md");
                       const tileHeightClass =
                         size === "sm" ? "min-h-[92px]" : size === "lg" ? "min-h-[160px]" : "min-h-[128px]";
+                      const display = String(blockConfig.display || "grid");
 
                       const cardBase =
                         "group relative overflow-hidden border border-slate-200 bg-white shadow-sm transition hover:shadow-md";
+
+                      const selectedIndex = selectedImageIndexByBlock[block.id] ?? 0;
+                      const selectedItem = items[selectedIndex] || null;
 
                       return (
                         <div className="mt-3 space-y-4 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700 animate-in fade-in-0 slide-in-from-top-1 duration-200">
@@ -2031,14 +2108,25 @@ export default function LinkPagesScreen() {
 
                             {images.length > 0 && (
                               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                                {images.map((url, idx) => (
+                                {items.map((item, idx) => (
                                   <div
                                     key={`${block.id}-img-${idx}`}
-                                    className={cn(cardBase, shapeClass)}
+                                    className={cn(
+                                      cardBase,
+                                      shapeClass,
+                                      "cursor-pointer",
+                                      selectedIndex === idx ? "ring-2 ring-emerald-500" : "ring-0"
+                                    )}
+                                    onClick={() =>
+                                      setSelectedImageIndexByBlock((prev) => ({
+                                        ...prev,
+                                        [block.id]: idx,
+                                      }))
+                                    }
                                   >
                                     <div className={cn("relative w-full", aspectClass, tileHeightClass)}>
                                       <Image
-                                        src={url}
+                                        src={item.url}
                                         alt={blockConfig.alt || `Imagen ${idx + 1}`}
                                         fill
                                         className="object-cover"
@@ -2054,7 +2142,10 @@ export default function LinkPagesScreen() {
                                     <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-gradient-to-t from-black/55 via-black/0 to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                                       <button
                                         type="button"
-                                        onClick={() => handleMakePrimaryBlockImage(block.id, idx)}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleMakePrimaryBlockImage(block.id, idx);
+                                        }}
                                         className="rounded-md bg-white/90 p-2 text-slate-900 shadow hover:bg-white"
                                         title="Poner como portada"
                                       >
@@ -2062,7 +2153,10 @@ export default function LinkPagesScreen() {
                                       </button>
                                       <button
                                         type="button"
-                                        onClick={() => openReplaceImagePicker(block.id, idx)}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openReplaceImagePicker(block.id, idx);
+                                        }}
                                         className="rounded-md bg-white/90 p-2 text-slate-900 shadow hover:bg-white"
                                         title="Reemplazar imagen"
                                       >
@@ -2070,7 +2164,10 @@ export default function LinkPagesScreen() {
                                       </button>
                                       <button
                                         type="button"
-                                        onClick={() => handleRemoveBlockImage(block.id, idx)}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRemoveBlockImage(block.id, idx, items.length);
+                                        }}
                                         className="rounded-md bg-white/90 p-2 text-red-700 shadow hover:bg-white"
                                         title="Eliminar imagen"
                                       >
@@ -2096,26 +2193,99 @@ export default function LinkPagesScreen() {
                             )}
                           </div>
 
-                          <CollapsiblePanel
-                            title="Link al hacer clic (opcional)"
-                            description="Si lo defines, todas las imágenes de este bloque abrirán el link."
-                            className="bg-slate-50 shadow-none"
-                            headerClassName="px-3 py-2"
-                            contentClassName="px-3 pb-3"
-                          >
-                            <input
-                              type="url"
-                              value={blockConfig.linkUrl || ""}
-                              onChange={(e) =>
-                                updateBlockConfigLocal(block.id, (config) => ({
-                                  ...config,
-                                  linkUrl: e.target.value,
-                                }))
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <CollapsiblePanel
+                              title="Link por defecto (opcional)"
+                              description="Se usa cuando una imagen no tenga link propio."
+                              className="bg-slate-50 shadow-none"
+                              headerClassName="px-3 py-2"
+                              contentClassName="px-3 pb-3"
+                            >
+                              <input
+                                type="url"
+                                value={blockConfig.linkUrl || ""}
+                                onChange={(e) =>
+                                  updateBlockConfigLocal(block.id, (config) => ({
+                                    ...config,
+                                    linkUrl: e.target.value,
+                                  }))
+                                }
+                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                                placeholder="https://..."
+                              />
+                            </CollapsiblePanel>
+
+                            <CollapsiblePanel
+                              title="Link de la imagen seleccionada"
+                              description={
+                                selectedItem
+                                  ? `Imagen ${selectedIndex + 1} ${selectedIndex === 0 ? "(portada)" : ""}`
+                                  : "Selecciona una miniatura para editar su link."
                               }
-                              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                              placeholder="https://..."
-                            />
-                          </CollapsiblePanel>
+                              className="bg-slate-50 shadow-none"
+                              headerClassName="px-3 py-2"
+                              contentClassName="px-3 pb-3"
+                              defaultOpen
+                            >
+                              <input
+                                type="url"
+                                value={(selectedItem?.linkUrl as string) || ""}
+                                onChange={(e) =>
+                                  handleSetImageLinkUrl(block.id, selectedIndex, e.target.value)
+                                }
+                                disabled={!selectedItem}
+                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm placeholder:text-slate-400 disabled:opacity-60 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                                placeholder="https://..."
+                              />
+                            </CollapsiblePanel>
+                          </div>
+
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold text-slate-700">Layout</p>
+                            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                              {[
+                                { value: "grid", label: "Grid" },
+                                { value: "carousel", label: "Carrusel" },
+                                { value: "mosaic", label: "Mosaico" },
+                                { value: "filmstrip", label: "Filmstrip" },
+                              ].map((opt) => (
+                                <button
+                                  key={opt.value}
+                                  type="button"
+                                  onClick={() =>
+                                    updateBlockConfigLocal(block.id, (config) => ({
+                                      ...config,
+                                      display: opt.value,
+                                    }))
+                                  }
+                                  className={cn(
+                                    "relative overflow-hidden rounded-2xl border p-3 text-left shadow-sm transition hover:shadow-md",
+                                    display === opt.value
+                                      ? "border-slate-900 bg-slate-900 text-white"
+                                      : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                                  )}
+                                >
+                                  <div className="text-sm font-semibold">{opt.label}</div>
+                                  <div className={cn("mt-2 grid gap-1", opt.value === "carousel" ? "grid-cols-3" : "grid-cols-2")}>
+                                    {Array.from({ length: opt.value === "filmstrip" ? 3 : 4 }).map((_, i) => (
+                                      <div
+                                        key={i}
+                                        className={cn(
+                                          "h-7 rounded-md",
+                                          display === opt.value ? "bg-white/20" : "bg-slate-200"
+                                        )}
+                                        style={{
+                                          opacity: opt.value === "mosaic" && i === 0 ? 1 : 0.9,
+                                          gridColumn:
+                                            opt.value === "mosaic" && i === 0 ? "span 2 / span 2" : undefined,
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
 
                           <div className="grid gap-3 md:grid-cols-2">
                             <div className="space-y-1">
