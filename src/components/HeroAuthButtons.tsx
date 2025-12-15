@@ -9,14 +9,22 @@ export function HeroAuthButtons() {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <SignedOut>
-        <SignUpButton mode="modal">
+        <SignUpButton
+          mode="modal"
+          forceRedirectUrl="/dashboard"
+          fallbackRedirectUrl="/dashboard"
+        >
           <Button type="button" size="lg" className="flex items-center gap-2">
             Crear mi página
             <ArrowRight className="h-4 w-4" />
           </Button>
         </SignUpButton>
 
-        <SignInButton mode="modal">
+        <SignInButton
+          mode="modal"
+          forceRedirectUrl="/dashboard"
+          fallbackRedirectUrl="/dashboard"
+        >
           <Button type="button" size="lg" variant="outline" className="border-slate-200 bg-white">
             Ir al panel
           </Button>
@@ -34,4 +42,3 @@ export function HeroAuthButtons() {
     </div>
   );
 }
-

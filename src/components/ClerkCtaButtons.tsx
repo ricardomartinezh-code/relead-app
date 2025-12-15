@@ -24,7 +24,11 @@ export function ClerkCtaButtons(props: {
   return (
     <>
       <SignedOut>
-        <SignInButton mode="modal">
+        <SignInButton
+          mode="modal"
+          forceRedirectUrl="/dashboard"
+          fallbackRedirectUrl="/dashboard"
+        >
           <Button
             type="button"
             variant={signInVariant}
@@ -35,7 +39,11 @@ export function ClerkCtaButtons(props: {
           </Button>
         </SignInButton>
 
-        <SignUpButton mode="modal">
+        <SignUpButton
+          mode="modal"
+          forceRedirectUrl="/dashboard"
+          fallbackRedirectUrl="/dashboard"
+        >
           <Button
             type="button"
             variant={signUpVariant}
@@ -55,4 +63,3 @@ export function ClerkCtaButtons(props: {
     </>
   );
 }
-
