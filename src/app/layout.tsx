@@ -5,6 +5,7 @@ import "./globals.css";
 
 // Importamos el pie de página que contendrá enlaces legales y versión
 import { Footer } from "@/components/Footer";
+import { CornerLogo } from "@/components/CornerLogo";
 
 const inter = Inter({ variable: "--font-sans", subsets: ["latin"] });
 const jetBrainsMono = JetBrains_Mono({
@@ -79,6 +80,7 @@ export default function RootLayout({
           className={`${inter.variable} ${jetBrainsMono.variable} ${poppins.variable} ${dmSans.variable} ${spaceGrotesk.variable} font-sans antialiased`}
         >
           {children}
+          <CornerLogo />
           {/* Añadimos el pie de página al final del documento */}
           <Footer />
         </body>
