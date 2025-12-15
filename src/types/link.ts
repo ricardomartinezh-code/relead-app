@@ -31,6 +31,12 @@ export interface LinkPageDesign {
   textColor?: string;
   accentColor?: string;
 
+  navigation?: {
+    enabled?: boolean;
+    style?: "auto" | "pills" | "drawer";
+    position?: "top" | "bottom";
+  };
+
   header?: {
     template?: "classic" | "minimal";
     useProfileAvatar?: boolean;

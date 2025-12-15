@@ -6,7 +6,7 @@ import {
   getLinksByProfileId,
   recordPageView,
 } from "@/lib/db";
-import { getDefaultPublicLinkPageByUserId } from "@/lib/db/linkPagePublic";
+import { getDefaultPublicLinkPageByUserId, getPublicLinkPageNavByUserId } from "@/lib/db/linkPagePublic";
 import { headers } from "next/headers";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -109,7 +109,18 @@ export default async function PublicProfilePage({
   const initials = getInitials(profile.title || "ReLead");
 
   if (defaultLinkPage) {
-    return <PublicLinkPage page={defaultLinkPage} variant="full" />;
+    const navItems = await getPublicLinkPageNavByUserId(profile.userId);
+    return (
+      <PublicLinkPage
+        page={defaultLinkPage}
+        variant="full"
+        nav={{
+          profileSlug: params.slug,
+          pages: navItems,
+          currentPageSlug: defaultLinkPage.slug,
+        }}
+      />
+    );
   }
 
   return (

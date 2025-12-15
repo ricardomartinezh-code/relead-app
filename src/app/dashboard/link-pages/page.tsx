@@ -27,6 +27,12 @@ interface ApiPageResponse {
   page: LinkPageWithContent;
 }
 
+type PublicNav = {
+  profileSlug: string;
+  currentPageSlug: string;
+  pages: Array<{ slug: string; label: string; isDefault: boolean }>;
+};
+
 // Estructura para representar un enlace social. Cada entrada cuenta con
 // un tipo (instagram, tiktok, x, youtube o custom) y una URL asociada.
 interface SocialLink {
@@ -56,6 +62,11 @@ const defaultDesign: LinkPageDesign = {
   buttonText: "#020617",
   textColor: "#f9fafb",
   accentColor: "#6366f1",
+  navigation: {
+    enabled: true,
+    style: "auto",
+    position: "top",
+  },
   header: {
     template: "classic",
     useProfileAvatar: true,
@@ -127,6 +138,7 @@ function DesignControls({
 }) {
   const background = design.background || {};
   const typography = design.typography || {};
+  const navigation = design.navigation || {};
 
   const updateBackground = (partial: Partial<NonNullable<LinkPageDesign["background"]>>) =>
     onChange({
@@ -140,6 +152,14 @@ function DesignControls({
     onChange({
       ...design,
       typography: { ...typography, ...partial },
+    });
+
+  const updateNavigation = (
+    partial: Partial<NonNullable<LinkPageDesign["navigation"]>>
+  ) =>
+    onChange({
+      ...design,
+      navigation: { ...navigation, ...partial },
     });
 
   return (
@@ -408,6 +428,45 @@ function DesignControls({
             <option value="mono">Mono</option>
           </select>
         </label>
+      </div>
+
+      <div className="space-y-2 rounded-md border border-slate-200 bg-white p-2">
+        <p className="text-xs font-semibold text-slate-800">Navegación</p>
+        <label className="flex items-center gap-2 text-xs text-slate-700">
+          <input
+            type="checkbox"
+            checked={navigation.enabled !== false}
+            onChange={(e) => updateNavigation({ enabled: e.target.checked })}
+          />
+          Mostrar navegación entre páginas
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="flex flex-col gap-1 text-xs text-slate-700">
+            Estilo
+            <select
+              value={navigation.style || "auto"}
+              onChange={(e) => updateNavigation({ style: e.target.value as any })}
+              className="rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-ring/20"
+              disabled={navigation.enabled === false}
+            >
+              <option value="auto">Auto (móvil + desktop)</option>
+              <option value="pills">Pills</option>
+              <option value="drawer">Drawer</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-slate-700">
+            Posición
+            <select
+              value={navigation.position || "top"}
+              onChange={(e) => updateNavigation({ position: e.target.value as any })}
+              className="rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-ring/20"
+              disabled={navigation.enabled === false}
+            >
+              <option value="top">Arriba</option>
+              <option value="bottom">Abajo</option>
+            </select>
+          </label>
+        </div>
       </div>
     </div>
   );
@@ -1370,6 +1429,21 @@ export default function LinkPagesScreen() {
         ...(previewProfile ? { profile: previewProfile } : {}),
       }
     : null;
+
+  const navForPreview: PublicNav | undefined =
+    profile?.slug && pages.length > 1 && pageForPreview
+      ? {
+          profileSlug: profile.slug,
+          currentPageSlug: pageForPreview.slug,
+          pages: pages
+            .filter((p) => p.isPublished)
+            .map((p) => ({
+              slug: p.slug,
+              label: p.publicTitle || p.internalName,
+              isDefault: Boolean(p.isDefault),
+            })),
+        }
+      : undefined;
 
   return (
     <DashboardLayout>
@@ -2790,11 +2864,11 @@ export default function LinkPagesScreen() {
           <div className="flex justify-center">
             {previewDevice === "mobile" ? (
               <div className="h-[720px] w-[min(390px,100%)]">
-                <PublicLinkPage page={pageForPreview} variant="embed" />
+                <PublicLinkPage page={pageForPreview} variant="embed" nav={navForPreview} />
               </div>
             ) : (
               <div className="h-[720px] w-[min(1100px,100%)]">
-                <PublicLinkPage page={pageForPreview} variant="embed" />
+                <PublicLinkPage page={pageForPreview} variant="embed" nav={navForPreview} />
               </div>
             )}
           </div>

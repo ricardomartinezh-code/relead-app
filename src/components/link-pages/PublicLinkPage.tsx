@@ -1,7 +1,8 @@
- "use client";
+"use client";
 
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
+import { useState } from "react";
 import {
   AtSign,
   Facebook,
@@ -21,6 +22,7 @@ import {
   Youtube,
   Linkedin,
 } from "lucide-react";
+import Link from "next/link";
 import type {
   BlockStyleConfig,
   LinkBlockWithItems,
@@ -29,6 +31,7 @@ import type {
   LinkPageWithContent,
 } from "@/types/link";
 import type { PublicLinkPage } from "@/lib/db/linkPagePublic";
+import { cn } from "@/components/lib/utils";
 
 interface PublicLinkPageProps {
   page:
@@ -37,6 +40,11 @@ interface PublicLinkPageProps {
       })
     | null;
   variant?: "full" | "preview" | "embed";
+  nav?: {
+    profileSlug: string;
+    pages: Array<{ slug: string; label: string; isDefault: boolean }>;
+    currentPageSlug: string;
+  };
 }
 
 interface RenderOptions {
@@ -640,7 +648,11 @@ function renderSeparatorBlock(
   );
 }
 
-export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPageProps) {
+export default function PublicLinkPage({
+  page,
+  variant = "full",
+  nav,
+}: PublicLinkPageProps) {
   if (!page) {
     if (variant === "preview" || variant === "embed") {
       return (
@@ -655,6 +667,7 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
 
   const design = (page as any).design as LinkPageDesign | null;
   const typography = design?.typography || {};
+  const navigation = design?.navigation || {};
   const headingSizeClass =
     typography.headingSize === "sm"
       ? "text-sm"
@@ -702,6 +715,126 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
   const socialLinks = Array.isArray(profile?.socialLinks) ? profile?.socialLinks : [];
   const headerDesign = design?.header || {};
   const showSocialLinks = (headerDesign as any).showSocialLinks !== false;
+
+  const showNav =
+    navigation.enabled !== false &&
+    Boolean(nav?.profileSlug) &&
+    Array.isArray(nav?.pages) &&
+    (nav?.pages.length ?? 0) > 1;
+
+  const navConfig = nav;
+  const navStyle = (navigation.style || "auto") as NonNullable<
+    NonNullable<LinkPageDesign["navigation"]>["style"]
+  >;
+  const navPosition = (navigation.position || "top") as NonNullable<
+    NonNullable<LinkPageDesign["navigation"]>["position"]
+  >;
+
+  function buildPageHref(pageSlug: string, isDefault: boolean) {
+    if (isDefault) return `/${navConfig?.profileSlug}`;
+    return `/${navConfig?.profileSlug}/${pageSlug}`;
+  }
+
+  function PublicNavigator() {
+    const pages = navConfig?.pages || [];
+    const current = navConfig?.currentPageSlug || "";
+    const [open, setOpen] = useState(false);
+
+    const active =
+      pages.find((p) => p.slug === current) ??
+      pages.find((p) => p.isDefault) ??
+      pages[0];
+
+    const desktopPills = (
+      <div className="hidden md:flex md:items-center md:justify-center">
+        <div className="no-scrollbar inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-white/10 bg-white/5 p-1 shadow-sm shadow-black/20 backdrop-blur">
+          {pages.map((p) => {
+            const isActive = p.slug === current;
+            return (
+              <Link
+                key={p.slug}
+                href={buildPageHref(p.slug, p.isDefault)}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-xs font-semibold transition",
+                  isActive ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10 hover:text-white"
+                )}
+                aria-current={isActive ? "page" : undefined}
+              >
+                {p.label}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    );
+
+    const mobileDrawer = (
+      <div className="flex justify-center md:hidden">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-black/20 backdrop-blur transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
+        >
+          Páginas
+          <span className="text-white/70">·</span>
+          <span className="max-w-[180px] truncate text-white/85">{active?.label || "—"}</span>
+          <span className="text-white/70">▾</span>
+        </button>
+
+        {open && (
+          <div className="fixed inset-0 z-50">
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/55"
+              onClick={() => setOpen(false)}
+              aria-label="Cerrar"
+            />
+            <div className="absolute inset-x-0 bottom-0 rounded-t-3xl border border-white/10 bg-slate-950/95 p-4 shadow-2xl backdrop-blur">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-white">Páginas</p>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/85 hover:bg-white/10"
+                >
+                  Cerrar
+                </button>
+              </div>
+              <div className="mt-3 grid gap-2">
+                {pages.map((p) => {
+                  const isActive = p.slug === current;
+                  return (
+                    <Link
+                      key={p.slug}
+                      href={buildPageHref(p.slug, p.isDefault)}
+                      onClick={() => setOpen(false)}
+                      className={cn(
+                        "flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white shadow-sm shadow-black/20 transition hover:bg-white/10",
+                        isActive ? "ring-2 ring-white/20" : "ring-0"
+                      )}
+                      aria-current={isActive ? "page" : undefined}
+                    >
+                      <span className="min-w-0 truncate">{p.label}</span>
+                      <span className="text-white/60">→</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+
+    if (navStyle === "pills") return desktopPills;
+    if (navStyle === "drawer") return mobileDrawer;
+    return (
+      <>
+        {mobileDrawer}
+        {desktopPills}
+      </>
+    );
+  }
 
   const header = (
     <div className={`flex flex-col items-center gap-3 text-center ${fontFamilyClass} md:gap-4`}>
@@ -809,6 +942,7 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
         params.compact ? "px-3 py-4" : "px-4 py-10",
       ].join(" ")}
     >
+      {showNav && navPosition === "top" ? <PublicNavigator /> : null}
       <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-xl shadow-black/25 backdrop-blur">
         {header}
       </div>
@@ -816,6 +950,7 @@ export default function PublicLinkPage({ page, variant = "full" }: PublicLinkPag
         {content}
       </div>
       <p className="text-center text-xs text-white/45">Hecho con ReLead</p>
+      {showNav && navPosition === "bottom" ? <PublicNavigator /> : null}
     </div>
   );
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import PublicLinkPage from "@/components/link-pages/PublicLinkPage";
 import { getProfileBySlug, recordPageView } from "@/lib/db";
-import { getPublicLinkPageByProfileSlugAndPageSlug } from "@/lib/db/linkPagePublic";
+import { getPublicLinkPageByProfileSlugAndPageSlug, getPublicLinkPageNavByUserId } from "@/lib/db/linkPagePublic";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
@@ -55,12 +55,23 @@ export default async function PublicLinkPageBySlug({
   );
   if (!page) return notFound();
 
+  const navItems = await getPublicLinkPageNavByUserId(profile.userId);
+
   const hdrs = headers();
   const referrer = hdrs.get("referer") || undefined;
   const userAgent = hdrs.get("user-agent") || undefined;
   const ip = hdrs.get("x-forwarded-for") || undefined;
   await recordPageView(profile.id, referrer, userAgent, ip);
 
-  return <PublicLinkPage page={page} variant="full" />;
+  return (
+    <PublicLinkPage
+      page={page}
+      variant="full"
+      nav={{
+        profileSlug: params.slug,
+        pages: navItems,
+        currentPageSlug: page.slug,
+      }}
+    />
+  );
 }
-

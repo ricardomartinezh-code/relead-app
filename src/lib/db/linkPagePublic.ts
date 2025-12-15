@@ -13,6 +13,35 @@ export interface PublicLinkPage extends LinkPage {
   blocks: (LinkBlock & { items: LinkItem[] })[];
 }
 
+export type PublicLinkPageNavItem = {
+  slug: string;
+  label: string;
+  isDefault: boolean;
+};
+
+export async function getPublicLinkPageNavByUserId(
+  userId: string
+): Promise<PublicLinkPageNavItem[]> {
+  if (!userId) return [];
+
+  const rows = await sql/*sql*/`
+    SELECT
+      slug,
+      COALESCE(public_title, internal_name) AS label,
+      is_default
+    FROM link_pages
+    WHERE user_id = ${userId}
+      AND is_published = true
+    ORDER BY is_default DESC, updated_at DESC
+  `;
+
+  return rows.map((r: any) => ({
+    slug: String(r.slug),
+    label: String(r.label || r.slug),
+    isDefault: Boolean(r.is_default),
+  }));
+}
+
 export async function getPublicLinkPageByUsernameAndSlug(
   username: string,
   slug: string
